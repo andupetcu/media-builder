@@ -1,0 +1,38 @@
+FROM node:22-alpine AS base
+RUN apk add --no-cache git
+RUN corepack enable && corepack prepare pnpm@9.1.0 --activate
+WORKDIR /app
+
+# Development stage
+FROM base AS development
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/workers/package.json ./apps/workers/
+COPY packages/prisma/package.json ./packages/prisma/
+COPY packages/shared/package.json ./packages/shared/
+RUN pnpm install --frozen-lockfile
+COPY . .
+CMD ["pnpm", "--filter", "workers", "dev"]
+
+# Build stage
+FROM base AS build
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/workers/package.json ./apps/workers/
+COPY packages/prisma/package.json ./packages/prisma/
+COPY packages/shared/package.json ./packages/shared/
+RUN pnpm install --frozen-lockfile
+COPY . .
+RUN pnpm --filter prisma generate
+RUN pnpm --filter workers build
+
+# Production stage
+FROM base AS production
+ENV NODE_ENV=production
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/workers/package.json ./apps/workers/
+COPY packages/prisma/package.json ./packages/prisma/
+COPY packages/shared/package.json ./packages/shared/
+RUN pnpm install --frozen-lockfile --prod
+COPY --from=build /app/apps/workers/dist ./apps/workers/dist
+COPY --from=build /app/packages/prisma ./packages/prisma
+COPY --from=build /app/packages/shared ./packages/shared
+CMD ["node", "apps/workers/dist/main.js"]

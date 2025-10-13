@@ -1,0 +1,344 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pg_trgm]
+}
+
+// ===========================
+// User & Auth
+// ===========================
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String   @map("password_hash")
+  name          String
+  avatarUrl     String?  @map("avatar_url")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  lastLoginAt   DateTime? @map("last_login_at")
+
+  // Refresh tokens
+  refreshTokens RefreshToken[]
+
+  // Organization memberships
+  memberships   OrgMember[]
+
+  // Authored items
+  designs       Design[]
+  comments      Comment[]
+  assets        Asset[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// ===========================
+// Organizations & Teams
+// ===========================
+
+enum Role {
+  OWNER
+  ADMIN
+  DESIGNER
+  MEMBER
+  VIEWER
+}
+
+model Org {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  members   OrgMember[]
+  teams     Team[]
+
+  @@map("orgs")
+}
+
+model OrgMember {
+  id        String   @id @default(cuid())
+  orgId     String   @map("org_id")
+  userId    String   @map("user_id")
+  role      Role
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  org  Org  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  teamMembers TeamMember[]
+
+  @@unique([orgId, userId])
+  @@index([userId])
+  @@map("org_members")
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  orgId     String   @map("org_id")
+  name      String
+  slug      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  members   TeamMember[]
+  designs   Design[]
+  assets    Asset[]
+  brandKits BrandKit[]
+
+  @@unique([orgId, slug])
+  @@index([orgId])
+  @@map("teams")
+}
+
+model TeamMember {
+  id          String   @id @default(cuid())
+  teamId      String   @map("team_id")
+  orgMemberId String   @map("org_member_id")
+  role        Role
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  orgMember OrgMember @relation(fields: [orgMemberId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, orgMemberId])
+  @@index([orgMemberId])
+  @@map("team_members")
+}
+
+// ===========================
+// Brand Kits
+// ===========================
+
+model BrandKit {
+  id        String   @id @default(cuid())
+  teamId    String   @map("team_id")
+  name      String
+  colors    Json     @default("[]") // Array of hex colors
+  fonts     Json     @default("[]") // Array of font family names
+  logos     Json     @default("[]") // Array of asset IDs
+  rules     Json     @default("{}") // { restrictColors?: boolean, restrictFonts?: boolean }
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+  @@map("brand_kits")
+}
+
+// ===========================
+// Assets
+// ===========================
+
+enum AssetKind {
+  IMAGE
+  VIDEO
+  AUDIO
+  FONT
+  TEMPLATE
+}
+
+model Asset {
+  id            String     @id @default(cuid())
+  teamId        String     @map("team_id")
+  uploadedBy    String     @map("uploaded_by")
+  kind          AssetKind
+  name          String
+  slug          String
+  mimeType      String     @map("mime_type")
+  sizeBytes     BigInt     @map("size_bytes")
+  hash          String     // SHA-256 hash for deduplication
+  path          String     @unique // Relative path from ASSETS_ROOT
+  publicUrl     String?    @map("public_url")
+  thumbnailUrl  String?    @map("thumbnail_url")
+  proxyUrl      String?    @map("proxy_url") // For video 540p proxies
+  meta          Json       @default("{}") // { width?, height?, duration?, channels?, sampleRate?, aiPrompt?, aiInitAssetId?, aiTimestamp? }
+  tags          String[]   @default([])
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  team       Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  uploadedByUser User @relation(fields: [uploadedBy], references: [id])
+
+  @@index([teamId, createdAt])
+  @@index([hash])
+  @@index([tags], type: Gin)
+  @@index([meta], type: Gin)
+  @@map("assets")
+}
+
+// ===========================
+// Designs & Versions
+// ===========================
+
+enum DesignStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  ARCHIVED
+}
+
+model Design {
+  id          String        @id @default(cuid())
+  teamId      String        @map("team_id")
+  createdBy   String        @map("created_by")
+  name        String
+  slug        String
+  status      DesignStatus  @default(DRAFT)
+  doc         Json          @default("{}") // Polotno store JSON
+  thumbnail   String?
+  width       Int           @default(1920)
+  height      Int           @default(1080)
+  unit        String        @default("px")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  team          Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdByUser User      @relation(fields: [createdBy], references: [id])
+
+  versions      Version[]
+  comments      Comment[]
+  bulkJobs      BulkJob[]
+  publishPlans  PublishPlan[]
+
+  @@unique([teamId, slug])
+  @@index([teamId, createdAt])
+  @@index([doc], type: Gin)
+  @@map("designs")
+}
+
+model Version {
+  id        String   @id @default(cuid())
+  designId  String   @map("design_id")
+  label     String?
+  doc       Json     // Snapshot of design.doc at this point
+  createdAt DateTime @default(now()) @map("created_at")
+
+  design Design @relation(fields: [designId], references: [id], onDelete: Cascade)
+
+  @@index([designId, createdAt])
+  @@map("versions")
+}
+
+// ===========================
+// Comments & Collaboration
+// ===========================
+
+model Comment {
+  id        String   @id @default(cuid())
+  designId  String   @map("design_id")
+  authorId  String   @map("author_id")
+  text      String
+  pin       Json?    // { x: number, y: number, pageId?: string }
+  mentions  String[] @default([]) // Array of user IDs
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  design Design @relation(fields: [designId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id])
+
+  @@index([designId, createdAt])
+  @@index([authorId])
+  @@map("comments")
+}
+
+// ===========================
+// Bulk Jobs
+// ===========================
+
+enum BulkJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model BulkJob {
+  id         String        @id @default(cuid())
+  designId   String        @map("design_id")
+  sourceFile String        @map("source_file") // Path to uploaded CSV/XLSX
+  mapping    Json          // Column → placeholder mapping
+  formatters Json          @default("{}") // Formatters config
+  total      Int           @default(0)
+  completed  Int           @default(0)
+  failed     Int           @default(0)
+  status     BulkJobStatus @default(PENDING)
+  manifestUrl String?      @map("manifest_url") // URL to manifest.json
+  error      String?
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  design Design @relation(fields: [designId], references: [id], onDelete: Cascade)
+
+  @@index([designId, createdAt])
+  @@map("bulk_jobs")
+}
+
+// ===========================
+// Approvals & Publishing
+// ===========================
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model PublishPlan {
+  id         String         @id @default(cuid())
+  designId   String         @map("design_id")
+  name       String
+  approvers  String[]       @default([]) // Array of user IDs
+  status     ApprovalStatus @default(PENDING)
+  publishedUrl String?      @map("published_url")
+  webhookUrl String?        @map("webhook_url")
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+
+  design Design @relation(fields: [designId], references: [id], onDelete: Cascade)
+
+  @@index([designId])
+  @@map("publish_plans")
+}
+
+// ===========================
+// Feature Flags
+// ===========================
+
+model FeatureFlag {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  enabled   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("feature_flags")
+}

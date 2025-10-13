@@ -1,0 +1,25 @@
+{
+  "name": "@media-builder/prisma",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "scripts": {
+    "generate": "prisma generate",
+    "migrate": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "studio": "prisma studio",
+    "seed": "tsx seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.20.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "bcrypt": "^5.1.1",
+    "prisma": "^5.20.0",
+    "tsx": "^4.19.0"
+  },
+  "prisma": {
+    "seed": "tsx seed.ts"
+  }
+}
