@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { observer } from 'mobx-react-lite'
 import { PolotnoContainer, SidePanelWrap, WorkspaceWrap } from 'polotno'
 import { Toolbar } from 'polotno/toolbar/toolbar'
 import { ZoomButtons } from 'polotno/toolbar/zoom-buttons'
@@ -10,6 +11,7 @@ import { PagesTimeline } from 'polotno/pages-timeline'
 import { createStore } from 'polotno/model/store'
 import { TeamImagesSection } from './polotno/team-images-panel'
 import { TeamUploadSection } from './polotno/team-upload-panel'
+import { QrSection } from './polotno/qr-code-panel'
 import '@blueprintjs/core/lib/css/blueprint.css'
 
 interface PolotnoEditorProps {
@@ -19,7 +21,8 @@ interface PolotnoEditorProps {
   autoSaveInterval?: number
 }
 
-export function PolotnoEditor({
+// Wrap with observer for reactive state
+export const PolotnoEditor = observer(function PolotnoEditor({
   initialDoc,
   polotnoKey,
   onSave,
@@ -150,8 +153,8 @@ export function PolotnoEditor({
     }
   }
 
-  // Define custom sections including Team Images and Upload
-  const sections = [TeamUploadSection, TeamImagesSection, ...DEFAULT_SECTIONS]
+  // Define custom sections including Team Images, Upload, and QR Code
+  const sections = [TeamUploadSection, TeamImagesSection, QrSection, ...DEFAULT_SECTIONS]
 
   return (
     <div className="flex flex-col h-full">
@@ -192,6 +195,65 @@ export function PolotnoEditor({
         </div>
       </div>
 
+      {/* Canvas Controls Bar */}
+      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center space-x-4">
+        {/* Rulers Toggle */}
+        <button
+          onClick={() => store.toggleRulers()}
+          className={`px-3 py-1 text-sm rounded-md ${
+            store.rulersVisible
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          {store.rulersVisible ? 'Hide Rulers' : 'Show Rulers'}
+        </button>
+
+        {/* Bleed Toggle */}
+        <button
+          onClick={() => store.toggleBleed()}
+          className={`px-3 py-1 text-sm rounded-md ${
+            store.bleedVisible
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          {store.bleedVisible ? 'Hide Bleed' : 'Show Bleed'}
+        </button>
+
+        {/* Unit System Selector */}
+        <div className="flex items-center space-x-2">
+          <label htmlFor="unit-selector" className="text-sm text-gray-700">
+            Units:
+          </label>
+          <select
+            id="unit-selector"
+            className="px-2 py-1 text-sm border border-gray-300 rounded-md bg-white"
+            value={store.unit || 'px'}
+            onChange={e => {
+              const unit = e.target.value as 'px' | 'mm' | 'cm' | 'in' | 'pt'
+              if (unit === 'px') {
+                store.setUnit({ unit: 'px' })
+              } else {
+                store.setUnit({ unit, dpi: 300 })
+              }
+            }}
+          >
+            <option value="px">Pixels (px)</option>
+            <option value="mm">Millimeters (mm)</option>
+            <option value="cm">Centimeters (cm)</option>
+            <option value="in">Inches (in)</option>
+            <option value="pt">Points (pt)</option>
+          </select>
+        </div>
+
+        {/* Info about Magic Resize */}
+        <div className="ml-auto text-xs text-gray-600">
+          💡 Tip: Magic Resize is enabled - resize canvas with proportional scaling using store.setSize(w, h,
+          true)
+        </div>
+      </div>
+
       {/* Polotno Editor */}
       <div className="flex-1 overflow-hidden">
         <PolotnoContainer className="h-full">
@@ -208,4 +270,4 @@ export function PolotnoEditor({
       </div>
     </div>
   )
-}
+})
