@@ -1,10 +1,26 @@
-import { Worker, Queue } from 'bullmq'
+import { Worker } from 'bullmq'
 import Redis from 'ioredis'
-import 'dotenv/config'
+import { config } from 'dotenv'
+import { resolve } from 'path'
 import { processMediaAsset } from './processors/media-processor'
 
-const connection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+// Load .env from workspace root
+config({ path: resolve(__dirname, '../../../.env') })
+
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379'
+console.log('Redis URL:', process.env.REDIS_URL ? 'Loaded' : 'NOT LOADED')
+console.log('Connecting to Redis with URL:', redisUrl)
+
+const connection = new Redis(redisUrl, {
   maxRetriesPerRequest: null,
+})
+
+connection.on('connect', () => {
+  console.log('✓ Redis connected successfully')
+})
+
+connection.on('error', err => {
+  console.error('Redis connection error:', err.message)
 })
 
 // Export queue (Phase 4)

@@ -17,7 +17,7 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware'
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: ['../../.env.local', '../../.env'],
     }),
     ThrottlerModule.forRoot([
       {

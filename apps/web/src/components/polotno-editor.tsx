@@ -87,6 +87,7 @@ export function PolotnoEditor({
         }
       }
     }
+    return undefined
   }, [store, initialDoc, onSave, autoSaveInterval])
 
   // Manual save function

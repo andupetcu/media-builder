@@ -65,7 +65,12 @@ export default function DesignsPage() {
   }
 
   const createDesign = async () => {
-    if (!currentTeamId) return
+    if (!currentTeamId) {
+      setError('Please select a team first')
+      return
+    }
+
+    setError('')
 
     try {
       const { data } = await apiClient.post(`/teams/${currentTeamId}/designs`, {
@@ -76,6 +81,7 @@ export default function DesignsPage() {
 
       router.push(`/editor/${data.id}`)
     } catch (err: any) {
+      console.error('Failed to create design:', err)
       setError(err.response?.data?.message || 'Failed to create design')
     }
   }
@@ -156,7 +162,14 @@ export default function DesignsPage() {
             <button
               onClick={createDesign}
               disabled={!currentTeamId || teamsLoading}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed flex items-center space-x-2"
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2"
+              title={
+                !currentTeamId
+                  ? 'No team selected'
+                  : teamsLoading
+                    ? 'Loading teams...'
+                    : 'Create a new design'
+              }
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -166,7 +179,7 @@ export default function DesignsPage() {
                   d="M12 4v16m8-8H4"
                 />
               </svg>
-              <span>New Design</span>
+              <span>{teamsLoading ? 'Loading...' : 'New Design'}</span>
             </button>
           </div>
 

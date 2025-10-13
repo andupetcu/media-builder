@@ -157,9 +157,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "127.0.0.1:5432:5432"
+      - '127.0.0.1:5432:5432'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mediabuilder"]
+      test: ['CMD-SHELL', 'pg_isready -U mediabuilder']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -172,9 +172,9 @@ services:
     volumes:
       - redis_data:/data
     ports:
-      - "127.0.0.1:6379:6379"
+      - '127.0.0.1:6379:6379'
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -671,6 +671,7 @@ Adjust instance count in `ecosystem.config.js` based on CPU cores.
 ## Support
 
 For issues and questions:
+
 - Check logs: `pm2 logs`
 - Review Nginx logs: `/var/log/nginx/`
 - Database logs: `docker compose logs postgres`

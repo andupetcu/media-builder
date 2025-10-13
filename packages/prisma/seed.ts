@@ -1,5 +1,10 @@
 import { PrismaClient, Role } from '@prisma/client'
 import * as bcrypt from 'bcrypt'
+import { config } from 'dotenv'
+import { resolve } from 'path'
+
+// Load .env from workspace root
+config({ path: resolve(__dirname, '../../.env') })
 
 const prisma = new PrismaClient()
 

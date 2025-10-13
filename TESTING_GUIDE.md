@@ -976,9 +976,9 @@ Document any issues found during testing:
 
 ## Sign-Off
 
-**Date**: ******\_\_\_******
+**Date**: **\*\***\_\_\_**\*\***
 
-**Tester**: ******\_\_\_******
+**Tester**: **\*\***\_\_\_**\*\***
 
 **Status**: [ ] Fully Ready [ ] Issues Found
 

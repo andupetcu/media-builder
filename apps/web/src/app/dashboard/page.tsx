@@ -1,16 +1,48 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { ProtectedRoute } from '@/components/protected-route'
 import { useAuthStore } from '@/stores/auth-store'
+import { useTeamStore } from '@/stores/team-store'
 import { useRouter } from 'next/navigation'
+import { apiClient } from '@/lib/api-client'
 
 export default function DashboardPage() {
   const { user, logout } = useAuthStore()
+  const { currentTeamId, initialize: initializeTeams } = useTeamStore()
   const router = useRouter()
+  const [isCreating, setIsCreating] = useState(false)
+
+  useEffect(() => {
+    initializeTeams()
+  }, [initializeTeams])
 
   const handleLogout = async () => {
     await logout()
     router.push('/login')
+  }
+
+  const createDesign = async () => {
+    if (!currentTeamId) {
+      alert('Please wait for team to load...')
+      return
+    }
+
+    setIsCreating(true)
+
+    try {
+      const { data } = await apiClient.post(`/teams/${currentTeamId}/designs`, {
+        name: `New Design ${Date.now()}`,
+        width: 1920,
+        height: 1080,
+      })
+
+      router.push(`/editor/${data.id}`)
+    } catch (err: any) {
+      console.error('Failed to create design:', err)
+      alert('Failed to create design: ' + (err.response?.data?.message || err.message))
+      setIsCreating(false)
+    }
   }
 
   return (
@@ -79,8 +111,12 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                    Create Design
+                  <button
+                    onClick={createDesign}
+                    disabled={isCreating || !currentTeamId}
+                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
+                  >
+                    {isCreating ? 'Creating...' : 'Create Design'}
                   </button>
                 </div>
               </div>

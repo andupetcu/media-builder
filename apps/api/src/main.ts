@@ -43,9 +43,10 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document)
 
   const port = process.env.API_PORT || 3001
-  await app.listen(port)
+  const host = process.env.API_HOST || '10.0.0.60'
+  await app.listen(port, host)
   // eslint-disable-next-line no-console
-  console.log(`API Gateway running on port ${port}`)
+  console.log(`API Gateway running on ${host}:${port}`)
 }
 
 bootstrap()
