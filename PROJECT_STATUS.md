@@ -5,7 +5,9 @@
 ## 🎯 Overall Progress: Phase 3 (Backend Complete)
 
 ### Phase 1: ✅ COMPLETE
+
 **Repo & Auth Infrastructure**
+
 - Monorepo with Turbo, pnpm workspaces
 - Docker Compose (Postgres 16, Redis 7, Nginx)
 - Prisma schema with all entities
@@ -17,7 +19,9 @@
 - Workers scaffold with BullMQ
 
 ### Phase 2: ✅ COMPLETE
+
 **Assets & Uploads**
+
 - Multipart file upload (2GB max)
 - SHA-256 deduplication
 - Storage service with organized structure
@@ -30,9 +34,11 @@
 - Automatic MIME type detection
 
 ### Phase 3: 🚧 IN PROGRESS
+
 **Polotno Editor (Backend Complete)**
 
 **✅ Completed**:
+
 - Design CRUD endpoints
 - Version management (save, list, restore)
 - Polotno API key configured
@@ -40,6 +46,7 @@
 - Design document storage
 
 **📖 Frontend Guide Provided**:
+
 - Complete implementation guide in `PHASE3_IMPLEMENTATION_GUIDE.md`
 - Code examples for all components
 - API client setup
@@ -48,6 +55,7 @@
 - Asset picker integration
 
 ### Phases 4-12: 📋 PLANNED
+
 See `master_media_builder_plan.md` for complete specification
 
 ## 🔑 Polotno Configuration
@@ -147,12 +155,14 @@ curl -X POST http://localhost:3001/auth/login \
 **Docs**: `http://localhost:3001/docs` (Swagger UI)
 
 ### Auth
+
 - `POST /auth/login` - Login
 - `POST /auth/register` - Register
 - `POST /auth/refresh` - Refresh token
 - `POST /auth/logout` - Logout
 
 ### Designs
+
 - `GET /teams/:teamId/designs` - List designs
 - `POST /teams/:teamId/designs` - Create design
 - `GET /teams/:teamId/designs/:id` - Get design
@@ -163,6 +173,7 @@ curl -X POST http://localhost:3001/auth/login \
 - `POST /teams/:teamId/designs/:id/versions/:versionId/restore` - Restore version
 
 ### Assets
+
 - `GET /teams/:teamId/assets` - List assets
 - `POST /teams/:teamId/uploads` - Upload file
 - `GET /teams/:teamId/assets/:id` - Get asset
@@ -175,6 +186,7 @@ curl -X POST http://localhost:3001/auth/login \
 **Password**: `password123`
 
 This creates:
+
 - 1 Organization: "Demo Organization"
 - 1 Team: "Marketing Team"
 - 1 Sample Design: "Welcome Banner"
@@ -182,6 +194,7 @@ This creates:
 ## 📊 Database Schema
 
 **Core Entities**:
+
 - `User` - Authentication & profile
 - `Org` - Organizations
 - `OrgMember` - Org membership with roles
@@ -197,6 +210,7 @@ This creates:
 - `FeatureFlag` - Feature toggles
 
 **Key Indexes**:
+
 - `(teamId, createdAt)` on designs and assets
 - `(hash)` on assets for deduplication
 - `(tags)` GIN index on assets
@@ -206,6 +220,7 @@ This creates:
 ## 🛠️ Technology Stack
 
 **Backend**:
+
 - NestJS 10.4
 - Node.js 22
 - Prisma 5.20 (PostgreSQL 16)
@@ -216,6 +231,7 @@ This creates:
 - FFmpeg (video/audio)
 
 **Frontend**:
+
 - Next.js 14.2 (App Router)
 - React 18.3
 - Polotno 4.0
@@ -224,6 +240,7 @@ This creates:
 - Tailwind CSS 3.4
 
 **Infrastructure**:
+
 - Docker & Docker Compose
 - Nginx (reverse proxy)
 - Turbo (monorepo build tool)
@@ -248,6 +265,7 @@ When a file is uploaded:
 ## 📝 Design Workflow
 
 1. **Create Design**:
+
 ```bash
 POST /teams/{teamId}/designs
 {
@@ -280,6 +298,7 @@ POST /teams/{teamId}/designs
 ## 🔍 Troubleshooting
 
 ### FFmpeg Not Found
+
 ```bash
 # Install FFmpeg
 brew install ffmpeg  # macOS
@@ -294,6 +313,7 @@ pnpm --filter workers dev
 ```
 
 ### Database Connection Failed
+
 ```bash
 # Check PostgreSQL is running
 docker-compose ps
@@ -306,6 +326,7 @@ docker-compose restart postgres
 ```
 
 ### Port Already in Use
+
 ```bash
 # Find process
 lsof -i :3000
@@ -317,6 +338,7 @@ kill -9 <PID>
 ```
 
 ### Module Not Found
+
 ```bash
 # Reinstall dependencies
 rm -rf node_modules
@@ -377,6 +399,7 @@ Follow `PHASE3_IMPLEMENTATION_GUIDE.md` to implement:
 **Current Status**: Development/MVP
 
 **Before Production**:
+
 - [ ] Add comprehensive tests (Phase 14)
 - [ ] Set up CI/CD pipeline
 - [ ] Configure production environment variables

@@ -3,6 +3,7 @@
 ## Status: API Complete, Frontend Implementation Guide Provided
 
 ## Polotno Credentials
+
 - **API Key**: `WtWR19i4P14e_UK7eUUE`
 - **Domain**: `https://builder.footprints.media`
 - **Environment variables set**: `.env.example` and `apps/web/.env.local.example`
@@ -10,22 +11,24 @@
 ## ✅ Completed (API Backend)
 
 ### 1. Design CRUD Endpoints
+
 **Location**: `apps/api/src/designs/`
 
 All design management endpoints are implemented:
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/teams/:teamId/designs` | List designs (supports ?status= filter) |
-| GET | `/teams/:teamId/designs/:id` | Get design with versions |
-| POST | `/teams/:teamId/designs` | Create new design |
-| PUT | `/teams/:teamId/designs/:id` | Update design (name, status, doc, thumbnail) |
-| DELETE | `/teams/:teamId/designs/:id` | Delete design |
-| POST | `/teams/:teamId/designs/:id/versions` | Save version snapshot |
-| GET | `/teams/:teamId/designs/:id/versions` | List versions |
-| POST | `/teams/:teamId/designs/:id/versions/:versionId/restore` | Restore version |
+| Method | Endpoint                                                 | Description                                  |
+| ------ | -------------------------------------------------------- | -------------------------------------------- |
+| GET    | `/teams/:teamId/designs`                                 | List designs (supports ?status= filter)      |
+| GET    | `/teams/:teamId/designs/:id`                             | Get design with versions                     |
+| POST   | `/teams/:teamId/designs`                                 | Create new design                            |
+| PUT    | `/teams/:teamId/designs/:id`                             | Update design (name, status, doc, thumbnail) |
+| DELETE | `/teams/:teamId/designs/:id`                             | Delete design                                |
+| POST   | `/teams/:teamId/designs/:id/versions`                    | Save version snapshot                        |
+| GET    | `/teams/:teamId/designs/:id/versions`                    | List versions                                |
+| POST   | `/teams/:teamId/designs/:id/versions/:versionId/restore` | Restore version                              |
 
 ### 2. Design Service Features
+
 - Create design with default blank page
 - Update design doc (Polotno JSON)
 - Status management (DRAFT, IN_REVIEW, APPROVED, ARCHIVED)
@@ -119,8 +122,7 @@ export const designsApi = {
   list: (teamId: string, status?: string) =>
     apiClient.get(`/teams/${teamId}/designs`, { params: { status } }),
 
-  get: (teamId: string, id: string) =>
-    apiClient.get(`/teams/${teamId}/designs/${id}`),
+  get: (teamId: string, id: string) => apiClient.get(`/teams/${teamId}/designs/${id}`),
 
   create: (teamId: string, data: { name: string; width?: number; height?: number }) =>
     apiClient.post(`/teams/${teamId}/designs`, data),
@@ -128,8 +130,7 @@ export const designsApi = {
   update: (teamId: string, id: string, data: any) =>
     apiClient.put(`/teams/${teamId}/designs/${id}`, data),
 
-  delete: (teamId: string, id: string) =>
-    apiClient.delete(`/teams/${teamId}/designs/${id}`),
+  delete: (teamId: string, id: string) => apiClient.delete(`/teams/${teamId}/designs/${id}`),
 
   saveVersion: (teamId: string, id: string, label?: string) =>
     apiClient.post(`/teams/${teamId}/designs/${id}/versions`, { label }),
@@ -414,19 +415,25 @@ export const CustomAssetSection = {
 ## Key Features to Implement
 
 ### 1. Autosave (20 seconds)
+
 ✅ Implemented in `PolotnoEditor` component above
+
 - Uses `setInterval` to save every 20 seconds
 - Only saves if document changed
 - Shows save status in UI
 
 ### 2. Manual Version Snapshots
+
 ✅ Implemented via `handleSaveVersion` function
+
 - Prompts for optional label
 - Saves via `POST /teams/:teamId/designs/:id/versions`
 - Can restore via version panel
 
 ### 3. Smart Guides & Snap to Grid
+
 ✅ Enabled in Workspace component:
+
 ```typescript
 <Workspace
   store={store}
@@ -437,6 +444,7 @@ export const CustomAssetSection = {
 ```
 
 ### 4. Tidy Up Alignment
+
 Polotno has built-in alignment tools in the toolbar. To add custom "Tidy Up":
 
 ```typescript
@@ -457,6 +465,7 @@ const tidyUp = () => {
 ```
 
 ### 5. Brand Kit Enforcement
+
 To be implemented in Phase 6, but you can start with:
 
 ```typescript
@@ -476,12 +485,14 @@ store.on('change', () => {
 ## Installation Steps
 
 1. **Install dependencies**:
+
 ```bash
 cd apps/web
 pnpm install
 ```
 
 2. **Set environment variables**:
+
 ```bash
 # Copy example
 cp .env.local.example .env.local
@@ -494,11 +505,13 @@ cp .env.local.example .env.local
 3. **Create the files listed above** in the specified locations
 
 4. **Start development server**:
+
 ```bash
 pnpm --filter web dev
 ```
 
 5. **Access editor**:
+
 - Navigate to `/editor/[designId]`
 - Replace `YOUR_TEAM_ID` with actual team ID from your auth context
 

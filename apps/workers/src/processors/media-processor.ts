@@ -53,12 +53,7 @@ export async function processMediaAsset(data: MediaJobData) {
   }
 }
 
-async function processImage(
-  assetId: string,
-  filePath: string,
-  mimeType: string,
-  updates: any
-) {
+async function processImage(assetId: string, filePath: string, mimeType: string, updates: any) {
   // Get image metadata
   const metadata = await sharp(filePath).metadata()
   updates.meta = {

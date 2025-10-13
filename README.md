@@ -21,6 +21,7 @@ A Canva-class media builder for images, video, and audio with collaborative edit
 **📖 System Requirements**: See `SYSTEM_REQUIREMENTS.md` for detailed installation instructions.
 
 Quick install FFmpeg:
+
 ```bash
 # macOS
 brew install ffmpeg
@@ -71,11 +72,13 @@ pnpm dev
 ```
 
 This will start:
+
 - API Gateway on http://localhost:3001
 - Web Editor on http://localhost:3000
 - Nginx reverse proxy on http://localhost:8080
 
 Or start services individually:
+
 ```bash
 # API only
 pnpm --filter api dev
@@ -144,12 +147,14 @@ Phase 2 (Assets & Uploads) is now complete with:
 ## API Documentation
 
 Once the API is running, visit:
+
 - Swagger UI: http://localhost:3001/docs
 - Health check: http://localhost:3001/health
 
 ### Demo Credentials
 
 If you ran the seed script:
+
 - Email: `demo@mediabuilder.com`
 - Password: `password123`
 
@@ -205,6 +210,7 @@ pnpm --filter prisma studio
 Phase 3 (Polotno Editor) - **Backend Complete, Frontend Guide Provided**:
 
 **✅ Completed (Backend)**:
+
 - [x] Design CRUD endpoints (create, read, update, delete)
 - [x] Version management (save, list, restore)
 - [x] Polotno credentials configured
@@ -212,6 +218,7 @@ Phase 3 (Polotno Editor) - **Backend Complete, Frontend Guide Provided**:
 - [x] Status management (DRAFT, IN_REVIEW, APPROVED, ARCHIVED)
 
 **📖 Frontend Implementation Guide**:
+
 - [ ] Polotno editor component integration
 - [ ] Design autosave (every 20 seconds)
 - [ ] Manual version snapshots UI
@@ -224,6 +231,7 @@ Phase 3 (Polotno Editor) - **Backend Complete, Frontend Guide Provided**:
 ## Next Steps (Phase 4)
 
 Phase 4 will implement:
+
 - Export to PNG/JPG/SVG/PDF with Puppeteer
 - DPI and bleed settings
 - Multi-page export
@@ -234,6 +242,7 @@ Phase 4 will implement:
 Upload and process media assets with automatic thumbnail/proxy generation:
 
 ### Upload an Asset
+
 ```bash
 curl -X POST http://localhost:3001/teams/{teamId}/uploads \
   -H "Authorization: Bearer {token}" \
@@ -242,6 +251,7 @@ curl -X POST http://localhost:3001/teams/{teamId}/uploads \
 ```
 
 ### What Happens After Upload
+
 1. File temporarily stored in `/tmp`
 2. SHA-256 hash computed for deduplication
 3. File moved to `/data/assets/` with organized structure
@@ -250,6 +260,7 @@ curl -X POST http://localhost:3001/teams/{teamId}/uploads \
 6. Asset ready for use in editor
 
 ### Supported Formats
+
 - **Images**: JPEG, PNG, GIF, WebP, SVG
 - **Videos**: MP4, WebM, MOV, AVI (auto-generates 540p proxy)
 - **Audio**: MP3, WAV, OGG, M4A (auto-generates waveform)
@@ -262,6 +273,7 @@ See `PHASE2_SUMMARY.md` for complete upload documentation.
 See `.env.example` for all available environment variables.
 
 Key variables:
+
 - `DATABASE_URL`: Postgres connection string
 - `REDIS_URL`: Redis connection string
 - `ASSETS_ROOT`: Local storage path (default: `/data/assets`)

@@ -5,6 +5,7 @@ This guide will test every component of the Media Builder system to ensure it's 
 ## Prerequisites Check
 
 Before starting, verify you have:
+
 - [ ] Node.js 22+ installed
 - [ ] pnpm 9+ installed
 - [ ] Docker & Docker Compose installed
@@ -12,6 +13,7 @@ Before starting, verify you have:
 - [ ] At least 5GB free disk space
 
 Run this check:
+
 ```bash
 node --version    # Should be v22.x.x
 pnpm --version    # Should be 9.x.x
@@ -45,6 +47,7 @@ pnpm install
 ```
 
 **✅ Success criteria**:
+
 - No installation errors
 - All workspaces linked correctly
 - `node_modules` folders created
@@ -78,24 +81,28 @@ docker-compose ps
 ```
 
 **Test Postgres connection**:
+
 ```bash
 docker exec mediabuilder-postgres pg_isready -U mediabuilder
 # Expected: /var/run/postgresql:5432 - accepting connections
 ```
 
 **Test Redis connection**:
+
 ```bash
 docker exec mediabuilder-redis redis-cli ping
 # Expected: PONG
 ```
 
 **✅ Success criteria**:
+
 - All containers running
 - Health checks passing
 - Postgres accepting connections
 - Redis responding to ping
 
 **❌ If fails**:
+
 - Check Docker is running: `docker info`
 - Check logs: `docker-compose logs`
 - Check ports not in use: `lsof -i :5432`, `lsof -i :6379`
@@ -130,6 +137,7 @@ pnpm --filter prisma seed
 ```
 
 **Verify database**:
+
 ```bash
 # Open Prisma Studio (in a new terminal)
 pnpm --filter prisma studio
@@ -139,12 +147,14 @@ pnpm --filter prisma studio
 ```
 
 **✅ Success criteria**:
+
 - Prisma client generated
 - All migrations applied
 - Seed data created
 - Can view data in Prisma Studio
 
 **❌ If fails**:
+
 - Check DATABASE_URL in .env
 - Verify Postgres is running
 - Check migration files exist
@@ -164,6 +174,7 @@ pnpm --filter api dev
 ```
 
 **Test health check** (in another terminal):
+
 ```bash
 curl http://localhost:3001/health
 
@@ -183,12 +194,14 @@ Open browser: http://localhost:3001/docs
 - [ ] Can expand endpoint details
 
 **✅ Success criteria**:
+
 - API starts without errors
 - Health check returns "ok"
 - Database shows "connected"
 - Swagger UI accessible
 
 **❌ If fails**:
+
 - Check port 3001 not in use
 - Verify Postgres connection
 - Check logs for errors
@@ -242,6 +255,7 @@ curl -X POST http://localhost:3001/auth/refresh \
 ```
 
 **✅ Success criteria**:
+
 - Can register new user
 - Can login with credentials
 - Token works for authenticated endpoints
@@ -249,6 +263,7 @@ curl -X POST http://localhost:3001/auth/refresh \
 - Invalid token returns 401
 
 **❌ If fails**:
+
 - Check JWT_SECRET in .env
 - Verify bcrypt is working
 - Check database has user data
@@ -275,6 +290,7 @@ echo "Team ID: $TEAM_ID"
 ```
 
 **✅ Success criteria**:
+
 - Returns organizations
 - Can extract team ID
 - Team membership verified
@@ -322,6 +338,7 @@ curl http://localhost:3001/teams/$TEAM_ID/assets/$ASSET_ID \
 ```
 
 **Test asset storage**:
+
 ```bash
 # Check file was stored
 ls -la data/assets/public/org/
@@ -330,6 +347,7 @@ ls -la data/assets/public/org/
 ```
 
 **✅ Success criteria**:
+
 - File uploads successfully
 - Asset record created in database
 - File stored in correct directory structure
@@ -337,6 +355,7 @@ ls -la data/assets/public/org/
 - Can list and retrieve asset
 
 **❌ If fails**:
+
 - Check ASSETS_ROOT in .env
 - Verify /data/assets directory exists
 - Check file size limits
@@ -366,6 +385,7 @@ pnpm --filter workers dev
 ```
 
 **Wait 10 seconds**, then check asset again:
+
 ```bash
 curl http://localhost:3001/teams/$TEAM_ID/assets/$ASSET_ID \
   -H "Authorization: Bearer $TOKEN" \
@@ -375,6 +395,7 @@ curl http://localhost:3001/teams/$TEAM_ID/assets/$ASSET_ID \
 ```
 
 **Verify thumbnail file**:
+
 ```bash
 ls -la data/assets/public/thumbnails/
 
@@ -382,6 +403,7 @@ ls -la data/assets/public/thumbnails/
 ```
 
 **Test with video** (if you have a video file):
+
 ```bash
 # Upload a small video
 curl -X POST http://localhost:3001/teams/$TEAM_ID/uploads \
@@ -398,6 +420,7 @@ ls -la data/assets/public/proxies/
 ```
 
 **✅ Success criteria**:
+
 - Workers start successfully
 - Assets processed automatically
 - Thumbnails generated
@@ -406,6 +429,7 @@ ls -la data/assets/public/proxies/
 - No errors in worker logs
 
 **❌ If fails**:
+
 - Verify FFmpeg installed: `ffmpeg -version`
 - Check Redis connection
 - Check worker logs for errors
@@ -491,6 +515,7 @@ curl -X PUT http://localhost:3001/teams/$TEAM_ID/designs/$DESIGN_ID \
 ```
 
 **✅ Success criteria**:
+
 - Can create designs
 - Can update design doc
 - Can update name and slug
@@ -559,6 +584,7 @@ curl http://localhost:3001/teams/$TEAM_ID/designs/$DESIGN_ID \
 ```
 
 **✅ Success criteria**:
+
 - Can save versions
 - Versions store complete doc snapshot
 - Can list versions
@@ -602,6 +628,7 @@ curl http://localhost:3001/teams/$TEAM_ID/assets/$ASSET_ID \
 ```
 
 **✅ Success criteria**:
+
 - Can update asset name/tags
 - Slug updates automatically
 - Can delete asset
@@ -633,6 +660,7 @@ curl http://localhost:3001/teams/$TEAM_ID/designs/$DESIGN_ID/versions \
 ```
 
 **✅ Success criteria**:
+
 - Can delete design
 - Versions cascade deleted
 - 404 after deletion
@@ -673,6 +701,7 @@ ls -la data/assets/public/org/
 ```
 
 **✅ Success criteria**:
+
 - Same file returns same asset
 - No duplicate storage
 - Hash computed correctly
@@ -724,6 +753,7 @@ curl -X POST http://localhost:3001/teams/$TEAM_ID/designs \
 ```
 
 **✅ Success criteria**:
+
 - Proper error codes returned
 - Error messages are clear
 - Request IDs in responses
@@ -738,16 +768,19 @@ Open http://localhost:3001/docs
 Test each endpoint group:
 
 **Auth**:
+
 - [ ] POST /auth/register - Try it out
 - [ ] POST /auth/login - Try it out
 - [ ] POST /auth/refresh - Try it out
 
 **Users**:
+
 - [ ] Click "Authorize" button
 - [ ] Paste your access token
 - [ ] GET /users/me - Try it out
 
 **Designs**:
+
 - [ ] GET /teams/:teamId/designs
 - [ ] POST /teams/:teamId/designs
 - [ ] GET /teams/:teamId/designs/:id
@@ -756,12 +789,14 @@ Test each endpoint group:
 - [ ] POST /teams/:teamId/designs/:id/versions
 
 **Assets**:
+
 - [ ] GET /teams/:teamId/assets
 - [ ] POST /teams/:teamId/uploads (upload form)
 - [ ] PUT /teams/:teamId/assets/:id
 - [ ] DELETE /teams/:teamId/assets/:id
 
 **✅ Success criteria**:
+
 - All endpoints documented
 - Can execute requests from Swagger
 - Authorization works
@@ -802,6 +837,7 @@ curl http://localhost:3001/teams/$TEAM_ID/designs \
 ```
 
 **✅ Success criteria**:
+
 - Handles concurrent requests
 - No race conditions
 - Workers process queue
@@ -838,6 +874,7 @@ find data/assets/public -type f -name "*.jpg" -o -name "*.png" | wc -l
 ```
 
 **✅ Success criteria**:
+
 - Database referential integrity maintained
 - No orphaned records
 - File storage matches database records
@@ -850,18 +887,21 @@ find data/assets/public -type f -name "*.jpg" -o -name "*.png" | wc -l
 Mark each as complete:
 
 ### Infrastructure
+
 - [ ] Docker containers running and healthy
 - [ ] Postgres accepting connections
 - [ ] Redis responding to commands
 - [ ] Nginx proxying correctly
 
 ### API
+
 - [ ] API starts without errors
 - [ ] Health check passes
 - [ ] Swagger UI accessible
 - [ ] All endpoints documented
 
 ### Authentication
+
 - [ ] Can register new users
 - [ ] Can login with credentials
 - [ ] Tokens work for auth
@@ -869,6 +909,7 @@ Mark each as complete:
 - [ ] Logout invalidates tokens
 
 ### Assets
+
 - [ ] Can upload files (images, videos, audio)
 - [ ] Files stored correctly
 - [ ] SHA-256 deduplication works
@@ -876,6 +917,7 @@ Mark each as complete:
 - [ ] MIME type detection works
 
 ### Media Processing
+
 - [ ] Workers start successfully
 - [ ] Image thumbnails generated
 - [ ] Video thumbnails generated
@@ -884,6 +926,7 @@ Mark each as complete:
 - [ ] Metadata extracted correctly
 
 ### Designs
+
 - [ ] Can create designs
 - [ ] Can update design doc
 - [ ] Can update name/status
@@ -891,12 +934,14 @@ Mark each as complete:
 - [ ] Slug generation works
 
 ### Versions
+
 - [ ] Can save version snapshots
 - [ ] Can list versions
 - [ ] Can restore versions
 - [ ] Versions store complete doc
 
 ### Error Handling
+
 - [ ] Invalid credentials return 401
 - [ ] Invalid tokens return 401
 - [ ] Missing resources return 404
@@ -904,12 +949,14 @@ Mark each as complete:
 - [ ] Errors have consistent format
 
 ### Performance
+
 - [ ] Handles concurrent uploads
 - [ ] Handles concurrent requests
 - [ ] Workers process queue
 - [ ] No memory leaks
 
 ### Data Integrity
+
 - [ ] Foreign keys enforced
 - [ ] No orphaned records
 - [ ] File storage consistent with DB
@@ -929,12 +976,10 @@ Document any issues found during testing:
 
 ## Sign-Off
 
-**Date**: _______________
+**Date**: ******\_\_\_******
 
-**Tester**: _______________
+**Tester**: ******\_\_\_******
 
-**Status**: [ ] Fully Ready  [ ] Issues Found
+**Status**: [ ] Fully Ready [ ] Issues Found
 
 **Notes**:
-
-

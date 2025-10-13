@@ -1,14 +1,17 @@
 # Phase 2 Implementation Summary: Assets & Uploads
 
 ## Completion Date
+
 2025-10-13
 
 ## Overview
+
 Phase 2 implements a complete asset upload and processing pipeline with deduplication, automatic thumbnail generation, video proxies, and waveform extraction for audio files.
 
 ## Key Features Implemented
 
 ### 1. ✅ File Upload System
+
 **Location**: `apps/api/src/assets/upload.controller.ts`
 
 - **Multipart upload** with multer
@@ -21,6 +24,7 @@ Phase 2 implements a complete asset upload and processing pipeline with deduplic
 **Endpoint**: `POST /teams/:teamId/uploads`
 
 Example:
+
 ```bash
 curl -X POST http://localhost:3001/teams/{teamId}/uploads \
   -H "Authorization: Bearer {token}" \
@@ -30,6 +34,7 @@ curl -X POST http://localhost:3001/teams/{teamId}/uploads \
 ```
 
 ### 2. ✅ SHA-256 Deduplication
+
 **Location**: `apps/api/src/storage/storage.service.ts`
 
 - Files are hashed using SHA-256 before storage
@@ -38,13 +43,16 @@ curl -X POST http://localhost:3001/teams/{teamId}/uploads \
 - Hash stored in database for quick lookups
 
 **Methods**:
+
 - `hashFile(filePath)` - Hash from filesystem
 - `hashBuffer(buffer)` - Hash from memory
 
 ### 3. ✅ Storage Service
+
 **Location**: `apps/api/src/storage/storage.service.ts`
 
 **Directory Structure**:
+
 ```
 /data/assets/
   public/
@@ -58,6 +66,7 @@ curl -X POST http://localhost:3001/teams/{teamId}/uploads \
 ```
 
 **Features**:
+
 - Organized by org/team/kind/date
 - Uses first 16 characters of hash + slugified name
 - Public assets served directly by Nginx
@@ -65,16 +74,18 @@ curl -X POST http://localhost:3001/teams/{teamId}/uploads \
 - Automatic directory creation
 
 ### 4. ✅ Asset CRUD Endpoints
+
 **Location**: `apps/api/src/assets/assets.controller.ts`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/teams/:teamId/assets` | List assets (supports ?kind= filter) |
-| GET | `/teams/:teamId/assets/:id` | Get asset details |
-| PUT | `/teams/:teamId/assets/:id` | Update name/tags |
-| DELETE | `/teams/:teamId/assets/:id` | Delete asset + files |
+| Method | Endpoint                    | Description                          |
+| ------ | --------------------------- | ------------------------------------ |
+| GET    | `/teams/:teamId/assets`     | List assets (supports ?kind= filter) |
+| GET    | `/teams/:teamId/assets/:id` | Get asset details                    |
+| PUT    | `/teams/:teamId/assets/:id` | Update name/tags                     |
+| DELETE | `/teams/:teamId/assets/:id` | Delete asset + files                 |
 
 **Asset Response**:
+
 ```json
 {
   "id": "cuid",
@@ -94,16 +105,19 @@ curl -X POST http://localhost:3001/teams/{teamId}/uploads \
 ```
 
 ### 5. ✅ Media Processing Pipeline
+
 **Location**: `apps/workers/src/processors/media-processor.ts`
 
 Automatic processing triggered on asset upload:
 
 #### Image Processing
+
 - Extract metadata (width, height, format)
 - Generate 400x400 thumbnail (JPEG, 85% quality)
 - Store thumbnail with public access
 
 #### Video Processing
+
 - Extract metadata using ffprobe (width, height, duration, fps, codec)
 - Generate thumbnail from frame at 1 second
 - Generate 540p proxy for editing:
@@ -114,40 +128,48 @@ Automatic processing triggered on asset upload:
   - Web-optimized (`+faststart`)
 
 #### Audio Processing
+
 - Extract metadata (duration, codec, channels, sample rate)
 - Generate waveform data (100 samples, normalized 0-1)
 - Store waveform in `meta.waveform` JSON field
 
 ### 6. ✅ Media Services
+
 **Location**: `apps/api/src/media/`
 
 Four specialized services for media processing:
 
 #### MediaProbeService
+
 - Uses ffprobe to extract metadata from video/audio
 - Returns width, height, duration, codec, fps, channels, etc.
 - Graceful error handling
 
 #### ThumbnailService
+
 - Generates image thumbnails using sharp
 - Generates video thumbnails using ffmpeg
 - Automatic format detection
 - Configurable dimensions (default 400x400)
 
 #### WaveformService
+
 - Extracts audio peaks for visualization
 - Generates normalized waveform data
 - Optional PNG waveform image generation
 
 #### VideoProxyService
+
 - Generates 540p proxy for editing
 - Optional 1080p HD proxy
 - Optimized for web playback
 
 ### 7. ✅ Worker Implementation
+
 **Location**: `apps/workers/src/main.ts`
 
 BullMQ worker for media processing:
+
 - **Queue**: `media-processing`
 - **Concurrency**: 2 (processes 2 assets simultaneously)
 - **Jobs**: `process-asset`
@@ -155,6 +177,7 @@ BullMQ worker for media processing:
 - Graceful shutdown handling
 
 **Job Data**:
+
 ```json
 {
   "assetId": "cuid",
@@ -167,23 +190,27 @@ BullMQ worker for media processing:
 ## Architecture Decisions
 
 ### Why Deduplication?
+
 - **Storage efficiency**: Reuse identical files across teams
 - **Processing efficiency**: Skip thumbnail/proxy generation for duplicates
 - **Bandwidth savings**: Single download for identical assets
 
 ### Why 540p Proxies?
+
 - **Performance**: Browser can play smoothly during editing
 - **Bandwidth**: Smaller files for faster loading
 - **Quality**: Good enough for preview, export uses original
 - **Standard**: 540p is widely supported, balances quality/size
 
 ### Why Worker Queue?
+
 - **Non-blocking**: Upload returns immediately
 - **Scalability**: Can add more workers as needed
 - **Reliability**: Automatic retry on failure
 - **Monitoring**: Built-in job status tracking
 
 ### Why Local Storage?
+
 - **Simplicity**: No S3/Blob dependencies for MVP
 - **Performance**: Local filesystem is fast
 - **Cost**: No cloud storage fees
@@ -192,21 +219,25 @@ BullMQ worker for media processing:
 ## Dependencies Added
 
 ### API (`apps/api/package.json`)
+
 - `multer` - Multipart file upload
 - `sharp` - Image processing (thumbnails, optimization)
 - `mime-types` - MIME type detection and handling
 - `@types/multer` - TypeScript types
 
 ### Workers (`apps/workers/package.json`)
+
 - `sharp` - Image processing in worker
 
 ### System Requirements
+
 - **ffmpeg** - Required for video/audio processing
 - **ffprobe** - Required for media metadata extraction
 
 ## Testing Checklist
 
 ### Upload Flow
+
 - [ ] Upload image → thumbnail generated
 - [ ] Upload video → thumbnail + proxy generated
 - [ ] Upload audio → waveform generated
@@ -215,6 +246,7 @@ BullMQ worker for media processing:
 - [ ] Upload without kind → auto-detects from MIME
 
 ### CRUD Operations
+
 - [ ] List assets → returns all team assets
 - [ ] Filter by kind → returns only specified kind
 - [ ] Get asset → returns full details with metadata
@@ -223,6 +255,7 @@ BullMQ worker for media processing:
 - [ ] Delete asset → removes files and database record
 
 ### Media Processing
+
 - [ ] Image: metadata extracted (width, height)
 - [ ] Video: metadata extracted (duration, fps, codec)
 - [ ] Video: 540p proxy generated
@@ -231,6 +264,7 @@ BullMQ worker for media processing:
 - [ ] Proxy: accessible via public URL
 
 ### Storage
+
 - [ ] Files organized in correct directory structure
 - [ ] Hash-based deduplication works
 - [ ] Public assets served by Nginx
@@ -247,18 +281,21 @@ BullMQ worker for media processing:
 ## Performance Considerations
 
 ### Upload Performance
+
 - Files up to 2GB supported
 - Temporary storage in `/tmp`
 - SHA-256 hashing is fast (~100MB/s)
 - Upload completes before processing starts
 
 ### Processing Performance
+
 - Images: < 1 second (sharp is fast)
 - Videos: ~1-5 seconds per minute of video (ffmpeg)
 - Audio: ~1 second (waveform extraction)
 - Queue prevents API blocking
 
 ### Storage Performance
+
 - Local filesystem is fast
 - Nginx serves static files efficiently
 - Deduplication saves 20-80% storage (typical)
@@ -266,6 +303,7 @@ BullMQ worker for media processing:
 ## API Examples
 
 ### Upload Image
+
 ```bash
 curl -X POST http://localhost:3001/teams/TEAM_ID/uploads \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -274,18 +312,21 @@ curl -X POST http://localhost:3001/teams/TEAM_ID/uploads \
 ```
 
 ### List Assets
+
 ```bash
 curl http://localhost:3001/teams/TEAM_ID/assets \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ### Filter by Kind
+
 ```bash
 curl "http://localhost:3001/teams/TEAM_ID/assets?kind=VIDEO" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ### Update Asset
+
 ```bash
 curl -X PUT http://localhost:3001/teams/TEAM_ID/assets/ASSET_ID \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -294,6 +335,7 @@ curl -X PUT http://localhost:3001/teams/TEAM_ID/assets/ASSET_ID \
 ```
 
 ### Delete Asset
+
 ```bash
 curl -X DELETE http://localhost:3001/teams/TEAM_ID/assets/ASSET_ID \
   -H "Authorization: Bearer YOUR_TOKEN"
@@ -302,6 +344,7 @@ curl -X DELETE http://localhost:3001/teams/TEAM_ID/assets/ASSET_ID \
 ## Next Steps
 
 Phase 3 will build on this foundation:
+
 - Polotno editor integration (using uploaded assets)
 - Design autosave and version management
 - Brand kit enforcement (restrict colors/fonts)
@@ -329,6 +372,7 @@ sudo apt-get install ffmpeg
 ## Conclusion
 
 Phase 2 is **production-ready** with:
+
 - Complete upload pipeline
 - Automatic processing
 - Efficient deduplication

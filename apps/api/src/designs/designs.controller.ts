@@ -27,10 +27,7 @@ export class DesignsController {
   @Get()
   @ApiOperation({ summary: 'List team designs' })
   @ApiQuery({ name: 'status', enum: DesignStatus, required: false })
-  async getTeamDesigns(
-    @Param('teamId') teamId: string,
-    @Query('status') status?: DesignStatus
-  ) {
+  async getTeamDesigns(@Param('teamId') teamId: string, @Query('status') status?: DesignStatus) {
     return this.designsService.findTeamDesigns(teamId, status)
   }
 
@@ -52,11 +49,7 @@ export class DesignsController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update design' })
-  async updateDesign(
-    @Param('teamId') teamId: string,
-    @Param('id') id: string,
-    @Body() dto: any
-  ) {
+  async updateDesign(@Param('teamId') teamId: string, @Param('id') id: string, @Body() dto: any) {
     return this.designsService.updateDesign(id, teamId, dto)
   }
 

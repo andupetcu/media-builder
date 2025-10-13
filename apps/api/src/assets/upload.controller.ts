@@ -66,13 +66,7 @@ export class UploadController {
       },
       fileFilter: (_req, file, cb) => {
         // Validate mime type
-        const allowedTypes = [
-          'image/',
-          'video/',
-          'audio/',
-          'font/',
-          'application/pdf',
-        ]
+        const allowedTypes = ['image/', 'video/', 'audio/', 'font/', 'application/pdf']
         if (allowedTypes.some(type => file.mimetype.startsWith(type))) {
           cb(null, true)
         } else {

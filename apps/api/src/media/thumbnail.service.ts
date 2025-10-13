@@ -54,9 +54,7 @@ export class ThumbnailService {
       await execAsync(command)
 
       // Read and optimize with sharp
-      const thumbnail = await sharp(tempFile)
-        .jpeg({ quality: 85 })
-        .toBuffer()
+      const thumbnail = await sharp(tempFile).jpeg({ quality: 85 }).toBuffer()
 
       await unlink(tempFile).catch(() => {})
 

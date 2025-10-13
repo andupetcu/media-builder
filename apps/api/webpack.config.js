@@ -1,5 +1,5 @@
-const path = require('path');
-const nodeExternals = require('webpack-node-externals');
+const path = require('path')
+const nodeExternals = require('webpack-node-externals')
 
 module.exports = function (options, webpack) {
   return {
@@ -41,5 +41,5 @@ module.exports = function (options, webpack) {
         '@media-builder/prisma': path.resolve(__dirname, '../../packages/prisma'),
       },
     },
-  };
-};
+  }
+}

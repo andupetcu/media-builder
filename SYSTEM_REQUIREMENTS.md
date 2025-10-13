@@ -3,6 +3,7 @@
 ## Required Software
 
 ### Node.js 22+
+
 ```bash
 # Check version
 node --version
@@ -13,6 +14,7 @@ nvm use 22
 ```
 
 ### pnpm 9+
+
 ```bash
 # Check version
 pnpm --version
@@ -22,6 +24,7 @@ npm install -g pnpm@9
 ```
 
 ### Docker & Docker Compose
+
 Required for Postgres, Redis, and Nginx services.
 
 ```bash
@@ -31,9 +34,11 @@ docker-compose --version
 ```
 
 ### FFmpeg (Required for Phase 2+)
+
 FFmpeg is required for video/audio processing, thumbnails, proxies, and waveforms.
 
 #### macOS
+
 ```bash
 # Install via Homebrew
 brew install ffmpeg
@@ -44,6 +49,7 @@ ffprobe -version
 ```
 
 #### Ubuntu/Debian
+
 ```bash
 # Install
 sudo apt-get update
@@ -55,6 +61,7 @@ ffprobe -version
 ```
 
 #### Windows
+
 ```bash
 # Install via Chocolatey
 choco install ffmpeg
@@ -63,6 +70,7 @@ choco install ffmpeg
 ```
 
 #### Docker (Alternative)
+
 If you don't want to install ffmpeg locally, the workers can run in Docker with ffmpeg pre-installed:
 
 ```dockerfile
@@ -75,9 +83,11 @@ RUN apk add --no-cache ffmpeg
 ## Optional Tools
 
 ### Sharp Dependencies (Usually auto-installed)
+
 Sharp is used for image processing. On some systems, you may need additional libraries:
 
 #### Linux
+
 ```bash
 # Ubuntu/Debian
 sudo apt-get install libvips-dev
@@ -87,6 +97,7 @@ apk add vips-dev
 ```
 
 ### PostgreSQL Client (Optional)
+
 For direct database access outside of Prisma Studio:
 
 ```bash
@@ -98,6 +109,7 @@ sudo apt-get install postgresql-client
 ```
 
 ### Redis CLI (Optional)
+
 For debugging Redis queues:
 
 ```bash
@@ -159,6 +171,7 @@ echo "System check complete!"
 ```
 
 Save as `check-requirements.sh` and run:
+
 ```bash
 chmod +x check-requirements.sh
 ./check-requirements.sh
@@ -167,6 +180,7 @@ chmod +x check-requirements.sh
 ## Disk Space Requirements
 
 ### Development
+
 - **Node modules**: ~2GB
 - **Docker images**: ~1GB
 - **Build artifacts**: ~500MB
@@ -174,6 +188,7 @@ chmod +x check-requirements.sh
 - **Total minimum**: ~5GB free space recommended
 
 ### Production
+
 - **Application**: ~500MB
 - **Database**: Depends on usage (start with 10GB)
 - **Asset storage**: Depends on usage (recommend 100GB+)
@@ -182,6 +197,7 @@ chmod +x check-requirements.sh
 ## Memory Requirements
 
 ### Development
+
 - **Node.js processes**: 512MB - 1GB each
 - **Docker services**:
   - Postgres: 256MB
@@ -191,6 +207,7 @@ chmod +x check-requirements.sh
 - **Total minimum**: 4GB RAM
 
 ### Production
+
 - **API Gateway**: 1-2GB per instance
 - **Workers**: 2-4GB per instance (for video processing)
 - **Database**: 2GB minimum
@@ -209,6 +226,7 @@ Make sure these ports are available:
 - **8081**: WebSocket server
 
 Check for conflicts:
+
 ```bash
 lsof -i :3000
 lsof -i :3001
@@ -221,13 +239,17 @@ lsof -i :8081
 ## Troubleshooting
 
 ### FFmpeg Not Found
+
 If workers fail with "ffmpeg not found":
+
 1. Install ffmpeg (see above)
 2. Restart workers: `pnpm --filter workers dev`
 3. Check PATH: `echo $PATH`
 
 ### Sharp Installation Issues
+
 If sharp fails to install:
+
 ```bash
 # Clear cache and reinstall
 rm -rf node_modules
@@ -235,6 +257,7 @@ pnpm install --force
 ```
 
 ### Docker Services Won't Start
+
 ```bash
 # Check Docker is running
 docker info
@@ -249,6 +272,7 @@ docker-compose up -d
 ```
 
 ### Port Already in Use
+
 ```bash
 # Find process using port
 lsof -i :PORT_NUMBER
@@ -260,14 +284,17 @@ kill -9 PID
 ## Performance Tuning
 
 ### For Video Processing
+
 If processing large videos:
 
 1. **Increase Node.js memory**:
+
 ```bash
 export NODE_OPTIONS="--max-old-space-size=4096"
 ```
 
 2. **Increase worker concurrency**:
+
 ```typescript
 // apps/workers/src/main.ts
 connection,
@@ -275,7 +302,7 @@ concurrency: 4, // Increase from 2
 ```
 
 3. **Use SSD for /tmp**:
-FFmpeg writes temporary files, SSD significantly speeds up processing.
+   FFmpeg writes temporary files, SSD significantly speeds up processing.
 
 ## Next Steps
 

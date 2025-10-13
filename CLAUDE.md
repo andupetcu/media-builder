@@ -9,6 +9,7 @@ This is a **greenfield project** - the implementation plan exists but the codeba
 ## Project Vision
 
 Media Builder is a Canva-class media builder for images, video, and audio with:
+
 - **Frontend**: Next.js 14 + Polotno editor + TypeScript
 - **Backend**: NestJS + Node 22 + Prisma (Postgres 16) + BullMQ (Redis 7)
 - **Storage**: Local filesystem (no S3/Blob) at `/data/assets/`
@@ -26,6 +27,7 @@ The system will consist of 4 main services:
 ## Key Architectural Decisions
 
 ### Storage Strategy
+
 - **Local filesystem** instead of S3/Blob storage
 - Assets stored at `/data/assets/` with public/private separation
 - Nginx serves static files from `/data/assets/public/`
@@ -33,15 +35,18 @@ The system will consist of 4 main services:
 - Directory structure: `org/{orgId}/team/{teamId}/{type}/YYYY/MM/{hash16}_{slug}.ext`
 
 ### Data Model (Prisma)
+
 Core entities: User, Org, Team, BrandKit, Asset, Design, Version, Comment, BulkJob, PublishPlan
 
 Key design choices:
+
 - `Design.doc` field stores Polotno JSON schema
 - Enums: Role (OWNER/ADMIN/DESIGNER/MEMBER/VIEWER), AssetKind (IMAGE/VIDEO/AUDIO/FONT/TEMPLATE), DesignStatus (DRAFT/IN_REVIEW/APPROVED/ARCHIVED)
 - Indexes on `(teamId, createdAt)` for Design and Asset
 - GIN indexes on JSON fields (Asset.meta, Design.doc)
 
 ### Polotno Integration
+
 - `Design.doc` ↔ Polotno store state
 - Autosave every 20 seconds
 - Manual "Save version" for snapshots
@@ -49,12 +54,14 @@ Key design choices:
 - Brand enforcement: optional restrict colors/fonts, locked elements immutable
 
 ### AI Features
+
 - **Azure OpenAI**: Text generation (gpt-5-mini), image generation/edit/inpaint/outpaint (gpt-image-1)
 - **Local tools**: rembg (bg removal), Tesseract (OCR), Whisper (STT), RNNoise (denoise), aubio (beat detection), RVM (video bg removal, ≤10s clips)
 - Per-team quotas with 429 backoff
 - Store prompt hash, init asset hash, timestamp in meta for audit
 
 ### Video/Audio Pipeline
+
 - Multi-track timeline with transitions (crossfade/slide/wipe)
 - Browser plays 540p proxies during editing
 - FFmpeg worker renders final MP4 (1080p)
@@ -62,6 +69,7 @@ Key design choices:
 - Captions: Whisper → SRT → styled burn-in or soft subs
 
 ### Security Model
+
 - JWT + refresh tokens
 - RBAC guards on all endpoints
 - Org/team scoping for multi-tenancy
@@ -90,6 +98,7 @@ The plan defines 12 phases over 14 weeks:
 ## API Design Patterns
 
 Error responses follow consistent format:
+
 ```json
 {
   "code": "string",
@@ -100,6 +109,7 @@ Error responses follow consistent format:
 ```
 
 Key routes:
+
 - Auth: `/auth/login`, `/auth/refresh`
 - Designs: CRUD under `/teams/:teamId/designs`, `/designs/:id`
 - Assets: `/assets/uploads/start|chunk|finish`, `/assets/:id`
@@ -111,6 +121,7 @@ Key routes:
 ## Environment Configuration
 
 Critical environment variables:
+
 - `DATABASE_URL`: Postgres connection string
 - `REDIS_URL`: Redis connection string
 - `ASSETS_ROOT`: Local filesystem path (default: `/data/assets`)
@@ -124,6 +135,7 @@ Critical environment variables:
 ## Performance Budgets
 
 Targets defined in the plan:
+
 - Editor JS bundle: < 1.8 MB gzipped
 - Time to Interactive: < 2.5s on mid-laptop
 - Canvas: 60fps with ≤150 elements/page
@@ -156,6 +168,7 @@ Targets defined in the plan:
 ## Footprints Integration
 
 External system integration via:
+
 - `POST /integrations/footprints/generate`: Generate assets from templates
 - `POST /integrations/footprints/webhook`: Receive signed webhooks
 - Deliver public URLs (optionally signed) for generated assets

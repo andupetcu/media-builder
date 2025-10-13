@@ -71,7 +71,17 @@ export class StorageService {
     const visibility = isPublic ? 'public' : 'private'
     const kindLower = kind.toLowerCase()
 
-    return join(visibility, 'org', orgId, 'team', teamId, kindLower, year.toString(), month, fileName)
+    return join(
+      visibility,
+      'org',
+      orgId,
+      'team',
+      teamId,
+      kindLower,
+      year.toString(),
+      month,
+      fileName
+    )
   }
 
   /**
