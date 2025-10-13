@@ -184,7 +184,10 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <button className="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">
+                  <button
+                    onClick={() => router.push('/assets')}
+                    className="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                  >
                     View Assets
                   </button>
                 </div>

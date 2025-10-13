@@ -4,9 +4,12 @@ import { useEffect, useRef, useState } from 'react'
 import { PolotnoContainer, SidePanelWrap, WorkspaceWrap } from 'polotno'
 import { Toolbar } from 'polotno/toolbar/toolbar'
 import { ZoomButtons } from 'polotno/toolbar/zoom-buttons'
-import { SidePanel } from 'polotno/side-panel'
+import { SidePanel, DEFAULT_SECTIONS } from 'polotno/side-panel'
 import { Workspace } from 'polotno/canvas/workspace'
+import { PagesTimeline } from 'polotno/pages-timeline'
 import { createStore } from 'polotno/model/store'
+import { TeamImagesSection } from './polotno/team-images-panel'
+import { TeamUploadSection } from './polotno/team-upload-panel'
 import '@blueprintjs/core/lib/css/blueprint.css'
 
 interface PolotnoEditorProps {
@@ -40,6 +43,7 @@ export function PolotnoEditor({
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
 
   useEffect(() => {
     // Load initial document if provided
@@ -106,6 +110,49 @@ export function PolotnoEditor({
     }
   }
 
+  // Export as PNG with high quality
+  const handleExportPNG = async () => {
+    setIsExporting(true)
+    try {
+      // Wait for all resources to load
+      await store.waitLoading()
+
+      // Export as PNG with 2x quality
+      await store.saveAsImage({
+        fileName: 'design.png',
+        pixelRatio: 2, // 2x quality for high-res
+        mimeType: 'image/png',
+      })
+    } catch (error) {
+      console.error('Export failed:', error)
+      alert('Failed to export design')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  // Export as JPEG with high quality
+  const handleExportJPEG = async () => {
+    setIsExporting(true)
+    try {
+      await store.waitLoading()
+
+      await store.saveAsImage({
+        fileName: 'design.jpg',
+        pixelRatio: 2,
+        mimeType: 'image/jpeg',
+      })
+    } catch (error) {
+      console.error('Export failed:', error)
+      alert('Failed to export design')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  // Define custom sections including Team Images and Upload
+  const sections = [TeamUploadSection, TeamImagesSection, ...DEFAULT_SECTIONS]
+
   return (
     <div className="flex flex-col h-full">
       {/* Save Status Bar */}
@@ -125,7 +172,21 @@ export function PolotnoEditor({
           )}
         </div>
         <div className="flex items-center space-x-2">
-          {isSaving && (
+          <button
+            onClick={handleExportPNG}
+            disabled={isExporting}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed text-sm"
+          >
+            {isExporting ? 'Exporting...' : 'Export PNG'}
+          </button>
+          <button
+            onClick={handleExportJPEG}
+            disabled={isExporting}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed text-sm"
+          >
+            {isExporting ? 'Exporting...' : 'Export JPEG'}
+          </button>
+          {(isSaving || isExporting) && (
             <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-blue-600 border-r-transparent"></div>
           )}
         </div>
@@ -135,12 +196,13 @@ export function PolotnoEditor({
       <div className="flex-1 overflow-hidden">
         <PolotnoContainer className="h-full">
           <SidePanelWrap>
-            <SidePanel store={store} />
+            <SidePanel store={store} sections={sections} defaultSection="team-upload" />
           </SidePanelWrap>
           <WorkspaceWrap>
-            <Toolbar store={store} />
+            <Toolbar store={store} downloadButtonEnabled />
             <Workspace store={store} />
             <ZoomButtons store={store} />
+            <PagesTimeline store={store} />
           </WorkspaceWrap>
         </PolotnoContainer>
       </div>
