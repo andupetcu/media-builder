@@ -9,14 +9,41 @@ import { SidePanel, DEFAULT_SECTIONS } from 'polotno/side-panel'
 import { Workspace } from 'polotno/canvas/workspace'
 import { PagesTimeline } from 'polotno/pages-timeline'
 import { createStore } from 'polotno/model/store'
-import { unstable_setAnimationsEnabled } from 'polotno/config'
+import { unstable_setAnimationsEnabled, setUploadFunc } from 'polotno/config'
 import { storeToVideo } from '@polotno/video-export'
 import { QrSection } from './polotno/qr-code-panel'
 import { UnsplashSection } from './polotno/unsplash-panel'
+import { apiClient } from '@/lib/api-client'
+import { useTeamStore } from '@/stores/team-store'
 import '@blueprintjs/core/lib/css/blueprint.css'
 
 // Enable animations support
 unstable_setAnimationsEnabled(true)
+
+// Configure upload function to use our backend API
+setUploadFunc(async (localFile: File) => {
+  // Get current team ID from the store
+  const teamId = useTeamStore.getState().currentTeamId
+  if (!teamId) {
+    throw new Error('No team selected')
+  }
+
+  const formData = new FormData()
+  formData.append('file', localFile)
+
+  try {
+    const { data } = await apiClient.post(`/teams/${teamId}/uploads`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    // Return the public URL of the uploaded asset
+    return data.publicUrl
+  } catch (error) {
+    console.error('Upload failed:', error)
+    throw new Error('Failed to upload file')
+  }
+})
 
 interface PolotnoEditorProps {
   initialDoc?: any
