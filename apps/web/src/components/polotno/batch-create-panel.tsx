@@ -28,7 +28,7 @@ interface BatchCreatePanelProps {
   store: any
 }
 
-type PanelView = 'variables' | 'upload' | 'mapping' | 'preview' | 'progress' | 'results'
+type PanelView = 'upload' | 'select-columns' | 'design' | 'generate' | 'progress' | 'results'
 
 interface PreviewResult {
   rowIndex: number
@@ -75,7 +75,10 @@ interface JobResult {
 
 export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
   // View state
-  const [currentView, setCurrentView] = useState<PanelView>('variables')
+  const [currentView, setCurrentView] = useState<PanelView>('upload')
+
+  // Column selection state
+  const [selectedColumns, setSelectedColumns] = useState<string[]>([])
 
   // Variables state
   const [variables, setVariables] = useState<DesignVariable[]>([])
@@ -141,6 +144,55 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
     const dispose = store.on('change', updateSelection)
     return () => dispose()
   }, [store])
+
+  // Auto-create variables from selected columns
+  useEffect(() => {
+    if (selectedColumns.length > 0 && parsedData) {
+      const newVariables: DesignVariable[] = selectedColumns.map(columnName => {
+        // Infer type from first row data
+        const firstValue = parsedData.rows[0]?.[columnName]
+        let type: VariableType = 'text'
+
+        if (typeof firstValue === 'string') {
+          // Check if it looks like a URL
+          if (firstValue.startsWith('http://') || firstValue.startsWith('https://')) {
+            type = 'image'
+          }
+        } else if (typeof firstValue === 'number') {
+          type = 'number'
+        }
+
+        return {
+          name: columnName.replace(/[^a-zA-Z0-9_]/g, '_'), // Sanitize name
+          type,
+          label: columnName,
+          sampleValue: String(firstValue || ''),
+          defaultValue: '',
+          constraints: {},
+        }
+      })
+
+      // Update design JSON with variables
+      const designJson = store.toJSON()
+      designJson.variables = newVariables
+
+      // Save back to store
+      updateVariableRegistry(designJson, newVariables)
+      setVariables(newVariables)
+
+      // Auto-create column mapping (1:1 since column name = variable name)
+      const mapping: Record<string, string> = {}
+      newVariables.forEach(v => {
+        const originalColumn = selectedColumns.find(col =>
+          col.replace(/[^a-zA-Z0-9_]/g, '_') === v.name
+        )
+        if (originalColumn) {
+          mapping[v.name] = originalColumn
+        }
+      })
+      setColumnMapping(mapping)
+    }
+  }, [selectedColumns, parsedData, store])
 
   // Auto-detect variables from design
   const autoDetectVariables = () => {
@@ -355,9 +407,9 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
       })
       setColumnMapping(autoMapping)
 
-      // Move to mapping view if file is valid
+      // Move to column selection if file is valid
       if (validation.valid) {
-        setCurrentView('mapping')
+        setCurrentView('select-columns')
       }
     } catch (error: any) {
       console.error('File parsing error:', error)
@@ -417,7 +469,7 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
     const designId = params.id as string
     const { currentTeamId } = useTeamStore.getState()
 
-    if (!currentTeamId || !designId || !parsedData || !previewData) {
+    if (!currentTeamId || !designId || !parsedData) {
       setGenerateError('Missing required data')
       return
     }
@@ -426,12 +478,16 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
     setGenerateError(null)
 
     try {
+      // Get design name from store
+      const designJson = store.toJSON()
+      const designName = designJson.name || 'Batch'
+
       const { data } = await apiClient.post(
         `/teams/${currentTeamId}/designs/${designId}/bulk/generate`,
         {
           rows: parsedData.rows,
           mapping: columnMapping,
-          designName: previewData.designName,
+          designName,
         }
       )
 
@@ -1593,10 +1649,16 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
             onClick={() => {
-              setCurrentView('variables')
+              // Reset all state and go back to upload
+              setCurrentView('upload')
               setCurrentJobId(null)
               setJobStatus(null)
               setJobResult(null)
+              setUploadedFile(null)
+              setParsedData(null)
+              setSelectedColumns([])
+              setVariables([])
+              setColumnMapping({})
             }}
             style={{
               flex: 1,
@@ -1617,13 +1679,352 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
     </div>
   )
 
+  const renderSelectColumnsView = () => (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <div style={{ padding: '15px', borderBottom: '1px solid #e0e0e0' }}>
+        <button
+          onClick={() => {
+            setCurrentView('upload')
+            setSelectedColumns([])
+          }}
+          style={{
+            marginBottom: '10px',
+            padding: '4px 8px',
+            background: '#f5f5f5',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px',
+          }}
+        >
+          ← Back to Upload
+        </button>
+        <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>
+          Select Columns
+        </h3>
+        <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
+          Choose which columns to use as variables ({parsedData?.headers.length || 0} available)
+        </p>
+      </div>
+
+      {/* Columns List */}
+      <div style={{ flex: 1, padding: '15px', overflow: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {parsedData?.headers.map(header => {
+            const isSelected = selectedColumns.includes(header)
+            const firstValue = parsedData.rows[0]?.[header]
+
+            return (
+              <div
+                key={header}
+                onClick={() => {
+                  if (isSelected) {
+                    setSelectedColumns(prev => prev.filter(c => c !== header))
+                  } else {
+                    setSelectedColumns(prev => [...prev, header])
+                  }
+                }}
+                style={{
+                  padding: '12px',
+                  background: isSelected ? '#e3f2fd' : 'white',
+                  border: `2px solid ${isSelected ? '#2196F3' : '#e0e0e0'}`,
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '4px',
+                      border: `2px solid ${isSelected ? '#2196F3' : '#ccc'}`,
+                      background: isSelected ? '#2196F3' : 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {isSelected && '✓'}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+                      {header}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>
+                      Sample: {String(firstValue).substring(0, 50)}
+                      {String(firstValue).length > 50 && '...'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Action Button */}
+      <div style={{ padding: '15px', borderTop: '1px solid #e0e0e0' }}>
+        <button
+          onClick={() => setCurrentView('design')}
+          disabled={selectedColumns.length === 0}
+          style={{
+            width: '100%',
+            padding: '12px',
+            background: selectedColumns.length > 0 ? '#2196F3' : '#ccc',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: selectedColumns.length > 0 ? 'pointer' : 'not-allowed',
+            fontSize: '14px',
+            fontWeight: '600',
+          }}
+        >
+          {selectedColumns.length > 0
+            ? `Continue with ${selectedColumns.length} column${selectedColumns.length > 1 ? 's' : ''} →`
+            : 'Select at least one column'}
+        </button>
+      </div>
+    </div>
+  )
+
+  const renderDesignView = () => (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <div style={{ padding: '15px', borderBottom: '1px solid #e0e0e0' }}>
+        <button
+          onClick={() => setCurrentView('select-columns')}
+          style={{
+            marginBottom: '10px',
+            padding: '4px 8px',
+            background: '#f5f5f5',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px',
+          }}
+        >
+          ← Back to Columns
+        </button>
+        <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>
+          Design Your Template
+        </h3>
+        <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: '#666' }}>
+          Add variables to your design. Preview shows values from first row.
+        </p>
+      </div>
+
+      {/* Variables List */}
+      <div style={{ flex: 1, padding: '15px', overflow: 'auto' }}>
+        <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '600' }}>
+          Available Variables:
+        </h4>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+          {variables.map(variable => (
+            <div
+              key={variable.name}
+              style={{
+                padding: '10px',
+                background: 'white',
+                border: '1px solid #e0e0e0',
+                borderRadius: '4px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '16px' }}>{getVariableTypeIcon(variable.type)}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600' }}>{`{${variable.name}}`}</div>
+                  <div style={{ fontSize: '11px', color: '#666' }}>{variable.label}</div>
+                </div>
+              </div>
+              <div
+                style={{
+                  padding: '6px 8px',
+                  background: '#f5f5f5',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  color: '#444',
+                  fontFamily: 'monospace',
+                }}
+              >
+                Preview: {variable.sampleValue}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div
+          style={{
+            padding: '15px',
+            background: '#e3f2fd',
+            borderRadius: '6px',
+            fontSize: '13px',
+            lineHeight: '1.6',
+          }}
+        >
+          <div style={{ fontWeight: '600', marginBottom: '8px' }}>💡 How to use:</div>
+          <ul style={{ margin: 0, paddingLeft: '20px' }}>
+            <li>Add text and insert variables using <code style={{ background: 'white', padding: '2px 4px', borderRadius: '2px' }}>{'{variableName}'}</code></li>
+            <li>For images: select image → mark as variable</li>
+            <li>The preview shows actual values from your first data row</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Action Button */}
+      <div style={{ padding: '15px', borderTop: '1px solid #e0e0e0' }}>
+        <button
+          onClick={() => setCurrentView('generate')}
+          style={{
+            width: '100%',
+            padding: '12px',
+            background: '#4CAF50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '600',
+          }}
+        >
+          Preview & Generate →
+        </button>
+      </div>
+    </div>
+  )
+
+  const renderGenerateView = () => {
+    const firstRowData = parsedData?.rows[0] || {}
+
+    return (
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Header */}
+        <div style={{ padding: '15px', borderBottom: '1px solid #e0e0e0' }}>
+          <button
+            onClick={() => setCurrentView('design')}
+            style={{
+              marginBottom: '10px',
+              padding: '4px 8px',
+              background: '#f5f5f5',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px',
+            }}
+          >
+            ← Back to Design
+          </button>
+          <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>
+            Generate Batch
+          </h3>
+          <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
+            Ready to generate {parsedData?.rowCount || 0} designs
+          </p>
+        </div>
+
+        {/* Preview Summary */}
+        <div style={{ flex: 1, padding: '15px', overflow: 'auto' }}>
+          {/* Variable Mapping */}
+          <div style={{ marginBottom: '20px' }}>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '600' }}>
+              Variable Mapping:
+            </h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {variables.map(variable => (
+                <div
+                  key={variable.name}
+                  style={{
+                    padding: '10px',
+                    background: 'white',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                  }}
+                >
+                  <strong>{`{${variable.name}}`}</strong> → {variable.label}
+                  <div style={{ marginTop: '4px', fontSize: '11px', color: '#666' }}>
+                    First value: {String(firstRowData[variable.label] || 'N/A')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div
+            style={{
+              padding: '15px',
+              background: '#e8f5e9',
+              borderRadius: '6px',
+              marginBottom: '15px',
+            }}
+          >
+            <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#2e7d32' }}>
+              📊 Batch Summary
+            </div>
+            <div style={{ fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div>• Total designs: {parsedData?.rowCount || 0}</div>
+              <div>• Variables: {variables.length}</div>
+              <div>• File: {uploadedFile?.name}</div>
+            </div>
+          </div>
+
+          {generateError && (
+            <div
+              style={{
+                padding: '15px',
+                background: '#ffebee',
+                borderLeft: '4px solid #f44336',
+                borderRadius: '4px',
+                marginBottom: '15px',
+              }}
+            >
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#c62828', marginBottom: '5px' }}>
+                Error
+              </div>
+              <div style={{ fontSize: '13px', color: '#666' }}>{generateError}</div>
+            </div>
+          )}
+        </div>
+
+        {/* Action Button */}
+        <div style={{ padding: '15px', borderTop: '1px solid #e0e0e0' }}>
+          <button
+            onClick={generateBatch}
+            disabled={isGenerating}
+            style={{
+              width: '100%',
+              padding: '12px',
+              background: isGenerating ? '#ccc' : '#FF9800',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: isGenerating ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              fontWeight: '600',
+            }}
+          >
+            {isGenerating
+              ? '⏳ Starting...'
+              : `🚀 Generate ${parsedData?.rowCount || 0} Designs`}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   // Main render
   return (
     <>
-      {currentView === 'variables' && renderVariablesView()}
       {currentView === 'upload' && renderUploadView()}
-      {currentView === 'mapping' && renderMappingView()}
-      {currentView === 'preview' && renderPreviewView()}
+      {currentView === 'select-columns' && renderSelectColumnsView()}
+      {currentView === 'design' && renderDesignView()}
+      {currentView === 'generate' && renderGenerateView()}
       {currentView === 'progress' && renderProgressView()}
       {currentView === 'results' && renderResultsView()}
     </>
