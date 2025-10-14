@@ -4,9 +4,23 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
 import { AppModule } from './app.module'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor'
+import { NestExpressApplication } from '@nestjs/platform-express'
+import { join } from 'path'
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create<NestExpressApplication>(AppModule)
+
+  // Serve static assets from /data/assets/public
+  const assetsPath = process.env.ASSETS_ROOT || '/data/assets'
+  app.useStaticAssets(join(assetsPath, 'public'), {
+    prefix: '/assets',
+    setHeaders: res => {
+      res.set('Access-Control-Allow-Origin', '*')
+      res.set('Access-Control-Allow-Methods', 'GET, OPTIONS')
+      res.set('Cache-Control', 'public, max-age=31536000, immutable')
+      res.set('X-Content-Type-Options', 'nosniff')
+    },
+  })
 
   // Global exception filter
   app.useGlobalFilters(new HttpExceptionFilter())

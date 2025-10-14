@@ -47,7 +47,10 @@ export const UnsplashPanel = observer(({ store }: { store: any }) => {
         </a>
       </p>
       <ImagesGrid
-        images={data?.map((item: any) => item.results).flat().filter(Boolean)}
+        images={data
+          ?.map((item: any) => item.results)
+          .flat()
+          .filter(Boolean)}
         getPreview={(image: any) => image.urls.small}
         onSelect={async (image: any, pos?: { x: number; y: number }, element?: any) => {
           // get url of image

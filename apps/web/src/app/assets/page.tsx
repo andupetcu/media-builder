@@ -233,11 +233,15 @@ export default function AssetsPage() {
                 >
                   {/* Thumbnail */}
                   <div className="aspect-square bg-gray-200 flex items-center justify-center">
-                    {((asset.thumbnailUrl && asset.thumbnailUrl.startsWith('http')) || (asset.kind === 'IMAGE' && asset.url)) ? (
+                    {asset.kind === 'IMAGE' && asset.url ? (
                       <img
-                        src={(asset.thumbnailUrl && asset.thumbnailUrl.startsWith('http')) ? asset.thumbnailUrl : asset.url}
+                        src={asset.url}
                         alt={asset.name}
                         className="w-full h-full object-cover"
+                        onError={e => {
+                          // Hide broken image icon
+                          e.currentTarget.style.display = 'none'
+                        }}
                       />
                     ) : (
                       <svg

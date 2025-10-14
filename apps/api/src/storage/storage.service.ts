@@ -98,7 +98,9 @@ export class StorageService {
     if (!relativePath.startsWith('public/')) {
       return undefined
     }
-    return `${this.publicBaseUrl}/${relativePath.replace('public/', '')}`
+    // Remove 'public/' prefix and prepend with /api/assets
+    const assetPath = relativePath.replace('public/', '')
+    return `${this.publicBaseUrl}/api/assets/${assetPath}`
   }
 
   /**
