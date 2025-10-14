@@ -172,12 +172,15 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
         }
       })
 
-      // Update design JSON with variables
+      // Update design JSON with variables and save to store
       const designJson = store.toJSON()
-      designJson.variables = newVariables
+      const updatedJson = updateVariableRegistry(designJson, newVariables)
 
-      // Save back to store
-      updateVariableRegistry(designJson, newVariables)
+      // Force a store update by modifying a page (needed for Polotno reactivity)
+      if (store.pages.length > 0) {
+        store.pages[0].set({ custom: { ...store.pages[0].custom, variablesUpdated: Date.now() } })
+      }
+
       setVariables(newVariables)
 
       // Auto-create column mapping (1:1 since column name = variable name)
@@ -1825,37 +1828,79 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
           Available Variables:
         </h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
-          {variables.map(variable => (
-            <div
-              key={variable.name}
-              style={{
-                padding: '10px',
-                background: 'white',
-                border: '1px solid #e0e0e0',
-                borderRadius: '4px',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                <span style={{ fontSize: '16px' }}>{getVariableTypeIcon(variable.type)}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '13px', fontWeight: '600' }}>{`{${variable.name}}`}</div>
-                  <div style={{ fontSize: '11px', color: '#666' }}>{variable.label}</div>
-                </div>
-              </div>
+          {variables.map(variable => {
+            const insertVariable = () => {
+              const selectedElements = store.selectedElements
+              const textElement = selectedElements.find((el: any) => el.type === 'text')
+
+              if (textElement) {
+                // Insert at cursor position or append to text
+                const currentText = textElement.text || ''
+                const variableText = `{${variable.name}}`
+                textElement.set({ text: currentText + variableText })
+              } else {
+                // Add new text element with variable
+                const page = store.activePage
+                if (page) {
+                  page.addElement({
+                    type: 'text',
+                    x: 50,
+                    y: 50,
+                    text: `{${variable.name}}`,
+                    fontSize: 30,
+                    fill: 'black',
+                  })
+                }
+              }
+            }
+
+            return (
               <div
+                key={variable.name}
                 style={{
-                  padding: '6px 8px',
-                  background: '#f5f5f5',
+                  padding: '10px',
+                  background: 'white',
+                  border: '1px solid #e0e0e0',
                   borderRadius: '4px',
-                  fontSize: '11px',
-                  color: '#444',
-                  fontFamily: 'monospace',
                 }}
               >
-                Preview: {variable.sampleValue}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '16px' }}>{getVariableTypeIcon(variable.type)}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '600' }}>{`{${variable.name}}`}</div>
+                    <div style={{ fontSize: '11px', color: '#666' }}>{variable.label}</div>
+                  </div>
+                  <button
+                    onClick={insertVariable}
+                    style={{
+                      padding: '4px 8px',
+                      background: '#2196F3',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                    }}
+                  >
+                    Insert
+                  </button>
+                </div>
+                <div
+                  style={{
+                    padding: '6px 8px',
+                    background: '#f5f5f5',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    color: '#444',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  Preview: {variable.sampleValue}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         <div
@@ -1869,9 +1914,10 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
         >
           <div style={{ fontWeight: '600', marginBottom: '8px' }}>💡 How to use:</div>
           <ul style={{ margin: 0, paddingLeft: '20px' }}>
-            <li>Add text and insert variables using <code style={{ background: 'white', padding: '2px 4px', borderRadius: '2px' }}>{'{variableName}'}</code></li>
-            <li>For images: select image → mark as variable</li>
-            <li>The preview shows actual values from your first data row</li>
+            <li><strong>Click "Insert"</strong> to add variable to selected text (or create new text)</li>
+            <li>Or manually type <code style={{ background: 'white', padding: '2px 4px', borderRadius: '2px' }}>{'{variableName}'}</code> in text</li>
+            <li>Variables show <strong>actual preview values</strong> from your first data row</li>
+            <li>For images: select image, then use old variables panel to mark as variable</li>
           </ul>
         </div>
       </div>
