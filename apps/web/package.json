@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@media-builder/shared": "workspace:*",
+    "@meronex/icons": "^4.0.0",
+    "@polotno/video-export": "^0.0.2",
     "@types/qrcode": "^1.5.5",
     "axios": "^1.7.0",
     "mobx": "^6.13.0",

@@ -7,7 +7,6 @@ import { useAuthStore } from '@/stores/auth-store'
 export default function Home() {
   const router = useRouter()
   const { login, isAuthenticated } = useAuthStore()
-  const [isLoggingIn, setIsLoggingIn] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -24,7 +23,6 @@ export default function Home() {
         router.push('/dashboard')
       } catch (err: any) {
         setError(err.message || 'Auto-login failed')
-        setIsLoggingIn(false)
       }
     }
 

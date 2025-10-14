@@ -9,15 +9,20 @@ import { SidePanel, DEFAULT_SECTIONS } from 'polotno/side-panel'
 import { Workspace } from 'polotno/canvas/workspace'
 import { PagesTimeline } from 'polotno/pages-timeline'
 import { createStore } from 'polotno/model/store'
+import { unstable_setAnimationsEnabled } from 'polotno/config'
+import { storeToVideo } from '@polotno/video-export'
 import { TeamImagesSection } from './polotno/team-images-panel'
 import { TeamUploadSection } from './polotno/team-upload-panel'
 import { QrSection } from './polotno/qr-code-panel'
 import '@blueprintjs/core/lib/css/blueprint.css'
 
+// Enable animations support
+unstable_setAnimationsEnabled(true)
+
 interface PolotnoEditorProps {
   initialDoc?: any
   polotnoKey: string
-  onSave?: (json: any) => void
+  onSave?: (json: any, thumbnail?: string) => void
   autoSaveInterval?: number
 }
 
@@ -47,6 +52,10 @@ export const PolotnoEditor = observer(function PolotnoEditor({
   const [isSaving, setIsSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [isExporting, setIsExporting] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [videoExportProgress, setVideoExportProgress] = useState(0)
+  const [isExportingVideo, setIsExportingVideo] = useState(false)
 
   useEffect(() => {
     // Load initial document if provided
@@ -70,8 +79,18 @@ export const PolotnoEditor = observer(function PolotnoEditor({
         saveTimeoutRef.current = setTimeout(async () => {
           setIsSaving(true)
           try {
+            // Wait for all resources to load
+            await store.waitLoading()
+
+            // Generate thumbnail (small preview at 0.3x scale)
+            const thumbnailDataUrl = await store.toDataURL({
+              pixelRatio: 0.3,
+              mimeType: 'image/jpeg',
+              quality: 0.8,
+            })
+
             const json = store.toJSON()
-            await onSave(json)
+            await onSave(json, thumbnailDataUrl)
             setLastSaved(new Date())
           } catch (error) {
             console.error('Auto-save failed:', error)
@@ -103,8 +122,18 @@ export const PolotnoEditor = observer(function PolotnoEditor({
 
     setIsSaving(true)
     try {
+      // Wait for all resources to load
+      await store.waitLoading()
+
+      // Generate thumbnail
+      const thumbnailDataUrl = await store.toDataURL({
+        pixelRatio: 0.3,
+        mimeType: 'image/jpeg',
+        quality: 0.8,
+      })
+
       const json = store.toJSON()
-      await onSave(json)
+      await onSave(json, thumbnailDataUrl)
       setLastSaved(new Date())
     } catch (error) {
       console.error('Manual save failed:', error)
@@ -153,6 +182,80 @@ export const PolotnoEditor = observer(function PolotnoEditor({
     }
   }
 
+  // Export as animated GIF
+  const handleExportGIF = async () => {
+    setIsExporting(true)
+    try {
+      await store.waitLoading()
+      await store.saveAsGIF()
+    } catch (error) {
+      console.error('GIF export failed:', error)
+      alert('Failed to export as GIF')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  // Export as MP4 video
+  const handleExportVideo = async () => {
+    setIsExportingVideo(true)
+    setVideoExportProgress(0)
+    try {
+      await store.waitLoading()
+
+      const videoBlob = await storeToVideo({
+        store,
+        fps: 30,
+        pixelRatio: 2,
+        onProgress: progress => {
+          setVideoExportProgress(Math.round(progress * 100))
+        },
+      })
+
+      // Download the video
+      const url = URL.createObjectURL(videoBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'design-animation.mp4'
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Video export failed:', error)
+      alert('Failed to export video. Make sure your design has animations enabled.')
+    } finally {
+      setIsExportingVideo(false)
+      setVideoExportProgress(0)
+    }
+  }
+
+  // Animation playback controls
+  const handlePlay = () => {
+    store.play()
+    setIsPlaying(true)
+  }
+
+  const handleStop = () => {
+    store.stop()
+    setIsPlaying(false)
+    setCurrentTime(0)
+  }
+
+  const handlePause = () => {
+    store.stop()
+    setIsPlaying(false)
+  }
+
+  // Update current time while playing
+  useEffect(() => {
+    if (!isPlaying) return
+
+    const interval = setInterval(() => {
+      setCurrentTime(store.currentTime || 0)
+    }, 100)
+
+    return () => clearInterval(interval)
+  }, [isPlaying, store])
+
   // Define custom sections including Team Images, Upload, and QR Code
   const sections = [TeamUploadSection, TeamImagesSection, QrSection, ...DEFAULT_SECTIONS]
 
@@ -175,6 +278,40 @@ export const PolotnoEditor = observer(function PolotnoEditor({
           )}
         </div>
         <div className="flex items-center space-x-2">
+          {/* Animation Playback Controls */}
+          <div className="flex items-center space-x-1 border-r border-gray-300 pr-2 mr-2">
+            {!isPlaying ? (
+              <button
+                onClick={handlePlay}
+                className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm"
+                title="Play animations"
+              >
+                ▶ Play
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={handlePause}
+                  className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm"
+                  title="Pause"
+                >
+                  ⏸ Pause
+                </button>
+                <button
+                  onClick={handleStop}
+                  className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm"
+                  title="Stop"
+                >
+                  ⏹ Stop
+                </button>
+              </>
+            )}
+            {isPlaying && (
+              <span className="text-xs text-gray-600 ml-2">{currentTime.toFixed(1)}s</span>
+            )}
+          </div>
+
+          {/* Export Controls */}
           <button
             onClick={handleExportPNG}
             disabled={isExporting}
@@ -189,7 +326,21 @@ export const PolotnoEditor = observer(function PolotnoEditor({
           >
             {isExporting ? 'Exporting...' : 'Export JPEG'}
           </button>
-          {(isSaving || isExporting) && (
+          <button
+            onClick={handleExportGIF}
+            disabled={isExporting}
+            className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-orange-300 disabled:cursor-not-allowed text-sm"
+          >
+            {isExporting ? 'Exporting...' : 'Export GIF'}
+          </button>
+          <button
+            onClick={handleExportVideo}
+            disabled={isExportingVideo}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-sm"
+          >
+            {isExportingVideo ? `Exporting Video ${videoExportProgress}%` : 'Export Video (MP4)'}
+          </button>
+          {(isSaving || isExporting || isExportingVideo) && (
             <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-blue-600 border-r-transparent"></div>
           )}
         </div>
@@ -201,12 +352,12 @@ export const PolotnoEditor = observer(function PolotnoEditor({
         <button
           onClick={() => store.toggleRulers()}
           className={`px-3 py-1 text-sm rounded-md ${
-            store.rulersVisible
+            store.rulesVisible
               ? 'bg-blue-600 text-white'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
-          {store.rulersVisible ? 'Hide Rulers' : 'Show Rulers'}
+          {store.rulesVisible ? 'Hide Rulers' : 'Show Rulers'}
         </button>
 
         {/* Bleed Toggle */}
@@ -232,11 +383,7 @@ export const PolotnoEditor = observer(function PolotnoEditor({
             value={store.unit || 'px'}
             onChange={e => {
               const unit = e.target.value as 'px' | 'mm' | 'cm' | 'in' | 'pt'
-              if (unit === 'px') {
-                store.setUnit({ unit: 'px' })
-              } else {
-                store.setUnit({ unit, dpi: 300 })
-              }
+              store.setUnit({ unit, dpi: 300 })
             }}
           >
             <option value="px">Pixels (px)</option>
@@ -249,8 +396,8 @@ export const PolotnoEditor = observer(function PolotnoEditor({
 
         {/* Info about Magic Resize */}
         <div className="ml-auto text-xs text-gray-600">
-          💡 Tip: Magic Resize is enabled - resize canvas with proportional scaling using store.setSize(w, h,
-          true)
+          💡 Tip: Magic Resize is enabled - resize canvas with proportional scaling using
+          store.setSize(w, h, true)
         </div>
       </div>
 
@@ -258,7 +405,7 @@ export const PolotnoEditor = observer(function PolotnoEditor({
       <div className="flex-1 overflow-hidden">
         <PolotnoContainer className="h-full">
           <SidePanelWrap>
-            <SidePanel store={store} sections={sections} defaultSection="team-upload" />
+            <SidePanel store={store} sections={sections} />
           </SidePanelWrap>
           <WorkspaceWrap>
             <Toolbar store={store} downloadButtonEnabled />

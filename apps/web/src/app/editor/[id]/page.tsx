@@ -79,12 +79,13 @@ export default function EditorPage() {
     }
   }
 
-  const handleSave = async (json: any) => {
+  const handleSave = async (json: any, thumbnail?: string) => {
     if (!currentTeamId || !designId) return
 
     try {
       await apiClient.put(`/teams/${currentTeamId}/designs/${designId}`, {
         doc: json,
+        thumbnail: thumbnail,
       })
     } catch (err: any) {
       console.error('Failed to save design:', err)
