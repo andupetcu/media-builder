@@ -46,3 +46,4 @@ Thumbs.db
 # Build outputs
 dist
 *.tsbuildinfo
+logs/
