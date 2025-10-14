@@ -28,7 +28,7 @@ interface BatchCreatePanelProps {
   store: any
 }
 
-type PanelView = 'variables' | 'upload' | 'mapping' | 'preview'
+type PanelView = 'variables' | 'upload' | 'mapping' | 'preview' | 'progress' | 'results'
 
 interface PreviewResult {
   rowIndex: number
@@ -43,6 +43,34 @@ interface PreviewResponse {
   totalRows: number
   previewCount: number
   previews: PreviewResult[]
+}
+
+interface JobStatus {
+  jobId: string
+  status: string
+  progress: number | object | undefined
+  data: {
+    designId: string
+    designName: string
+    totalRows: number
+  }
+}
+
+interface JobResult {
+  jobId: string
+  totalRows: number
+  successCount: number
+  failedCount: number
+  assets: Array<{
+    rowIndex: number
+    assetId: string
+    publicUrl: string
+    warnings: string[]
+  }>
+  errors: Array<{
+    rowIndex: number
+    error: string
+  }>
 }
 
 export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
@@ -78,6 +106,13 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
   const [previewData, setPreviewData] = useState<PreviewResponse | null>(null)
   const [isLoadingPreview, setIsLoadingPreview] = useState(false)
   const [previewError, setPreviewError] = useState<string | null>(null)
+
+  // Job state
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null)
+  const [jobStatus, setJobStatus] = useState<JobStatus | null>(null)
+  const [jobResult, setJobResult] = useState<JobResult | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generateError, setGenerateError] = useState<string | null>(null)
 
   // Load variables from design JSON
   useEffect(() => {
@@ -374,6 +409,72 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
       setPreviewError(err.response?.data?.message || 'Failed to load preview')
     } finally {
       setIsLoadingPreview(false)
+    }
+  }
+
+  const generateBatch = async () => {
+    const params = useParams()
+    const designId = params.id as string
+    const { currentTeamId } = useTeamStore.getState()
+
+    if (!currentTeamId || !designId || !parsedData || !previewData) {
+      setGenerateError('Missing required data')
+      return
+    }
+
+    setIsGenerating(true)
+    setGenerateError(null)
+
+    try {
+      const { data } = await apiClient.post(
+        `/teams/${currentTeamId}/designs/${designId}/bulk/generate`,
+        {
+          rows: parsedData.rows,
+          mapping: columnMapping,
+          designName: previewData.designName,
+        }
+      )
+
+      setCurrentJobId(data.jobId)
+      setCurrentView('progress')
+      // Start polling for job status
+      pollJobStatus(data.jobId)
+    } catch (err: any) {
+      console.error('Generate failed:', err)
+      setGenerateError(err.response?.data?.message || 'Failed to start batch generation')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const pollJobStatus = async (jobId: string) => {
+    try {
+      const { data } = await apiClient.get<JobStatus>(`/jobs/${jobId}`)
+      setJobStatus(data)
+
+      // If job is still running, poll again after 2 seconds
+      if (data.status === 'waiting' || data.status === 'active') {
+        setTimeout(() => pollJobStatus(jobId), 2000)
+      } else if (data.status === 'completed') {
+        // Load final results
+        loadJobResults(jobId)
+      } else if (data.status === 'failed') {
+        setGenerateError('Job failed to complete')
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch job status:', err)
+      setGenerateError(err.response?.data?.message || 'Failed to fetch job status')
+    }
+  }
+
+  const loadJobResults = async (jobId: string) => {
+    try {
+      const { data } = await apiClient.get(`/jobs/${jobId}/results`)
+      setJobResult(data.result)
+      setCurrentView('results')
+    } catch (err: any) {
+      console.error('Failed to load results:', err)
+      setGenerateError(err.response?.data?.message || 'Failed to load results')
     }
   }
 
@@ -1246,22 +1347,272 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
       {/* Action Button */}
       <div style={{ padding: '15px', borderTop: '1px solid #e0e0e0' }}>
         <button
-          onClick={() => alert('Full batch generation will be available in Phase 4')}
-          disabled={!previewData || isLoadingPreview}
+          onClick={generateBatch}
+          disabled={!previewData || isLoadingPreview || isGenerating}
           style={{
             width: '100%',
             padding: '12px',
-            background: previewData && !isLoadingPreview ? '#FF9800' : '#ccc',
+            background: previewData && !isLoadingPreview && !isGenerating ? '#FF9800' : '#ccc',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
-            cursor: previewData && !isLoadingPreview ? 'pointer' : 'not-allowed',
+            cursor: previewData && !isLoadingPreview && !isGenerating ? 'pointer' : 'not-allowed',
             fontSize: '14px',
             fontWeight: '600',
           }}
         >
-          🚀 Generate {previewData?.totalRows || parsedData?.rowCount || 0} Designs
+          {isGenerating ? '⏳ Starting...' : `🚀 Generate ${previewData?.totalRows || parsedData?.rowCount || 0} Designs`}
         </button>
+      </div>
+    </div>
+  )
+
+  const renderProgressView = () => {
+    const progress = typeof jobStatus?.progress === 'number' ? jobStatus.progress : 0
+
+    return (
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Header */}
+        <div style={{ padding: '15px', borderBottom: '1px solid #e0e0e0' }}>
+          <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>
+            Generating Designs
+          </h3>
+          <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
+            {jobStatus?.data.designName || 'Processing'} - {jobStatus?.data.totalRows || 0} designs
+          </p>
+        </div>
+
+        {/* Progress Content */}
+        <div style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          {generateError ? (
+            <div
+              style={{
+                width: '100%',
+                padding: '15px',
+                background: '#ffebee',
+                borderLeft: '4px solid #f44336',
+                borderRadius: '4px',
+                marginBottom: '15px',
+              }}
+            >
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#c62828', marginBottom: '5px' }}>
+                Generation Error
+              </div>
+              <div style={{ fontSize: '13px', color: '#666' }}>{generateError}</div>
+            </div>
+          ) : (
+            <>
+              {/* Progress Circle */}
+              <div
+                style={{
+                  position: 'relative',
+                  width: '120px',
+                  height: '120px',
+                  marginBottom: '20px',
+                }}
+              >
+                <svg width="120" height="120" style={{ transform: 'rotate(-90deg)' }}>
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="50"
+                    stroke="#e0e0e0"
+                    strokeWidth="8"
+                    fill="none"
+                  />
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="50"
+                    stroke="#FF9800"
+                    strokeWidth="8"
+                    fill="none"
+                    strokeDasharray={`${(progress / 100) * 314} 314`}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    fontSize: '24px',
+                    fontWeight: 'bold',
+                    color: '#FF9800',
+                  }}
+                >
+                  {Math.round(progress)}%
+                </div>
+              </div>
+
+              {/* Status Text */}
+              <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '5px' }}>
+                  {jobStatus?.status === 'waiting' && 'Waiting in queue...'}
+                  {jobStatus?.status === 'active' && 'Generating images...'}
+                  {jobStatus?.status === 'completed' && 'Complete!'}
+                  {jobStatus?.status === 'failed' && 'Failed'}
+                </div>
+                <div style={{ fontSize: '13px', color: '#666' }}>
+                  Job ID: {currentJobId?.substring(0, 8)}...
+                </div>
+              </div>
+
+              {/* Loading Spinner */}
+              {(jobStatus?.status === 'waiting' || jobStatus?.status === 'active') && (
+                <div
+                  style={{
+                    marginTop: '20px',
+                    width: '40px',
+                    height: '40px',
+                    border: '4px solid #f3f3f3',
+                    borderTop: '4px solid #FF9800',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                  }}
+                />
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  const renderResultsView = () => (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <div style={{ padding: '15px', borderBottom: '1px solid #e0e0e0' }}>
+        <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>
+          Batch Complete!
+        </h3>
+        <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
+          {jobResult?.successCount || 0} of {jobResult?.totalRows || 0} designs generated successfully
+        </p>
+      </div>
+
+      {/* Results Content */}
+      <div style={{ flex: 1, padding: '15px', overflow: 'auto' }}>
+        {/* Summary */}
+        <div style={{ marginBottom: '20px', padding: '15px', background: '#e8f5e9', borderRadius: '6px' }}>
+          <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#2e7d32' }}>
+            Summary
+          </div>
+          <div style={{ fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div>✓ Success: {jobResult?.successCount || 0}</div>
+            <div>✗ Failed: {jobResult?.failedCount || 0}</div>
+            <div>Total: {jobResult?.totalRows || 0}</div>
+          </div>
+        </div>
+
+        {/* Generated Assets */}
+        {jobResult && jobResult.assets.length > 0 && (
+          <div style={{ marginBottom: '20px' }}>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '600' }}>
+              Generated Assets:
+            </h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {jobResult.assets.map((asset) => (
+                <div
+                  key={asset.assetId}
+                  style={{
+                    padding: '12px',
+                    background: 'white',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                    <div
+                      style={{
+                        width: '60px',
+                        height: '60px',
+                        background: '#f5f5f5',
+                        borderRadius: '4px',
+                        backgroundImage: `url(${asset.publicUrl})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                      }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '4px' }}>
+                        Row {asset.rowIndex + 1}
+                      </div>
+                      <a
+                        href={asset.publicUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          fontSize: '11px',
+                          color: '#2196F3',
+                          textDecoration: 'none',
+                        }}
+                      >
+                        View Asset →
+                      </a>
+                    </div>
+                  </div>
+                  {asset.warnings.length > 0 && (
+                    <div style={{ fontSize: '11px', color: '#f57c00', marginTop: '8px' }}>
+                      Warnings: {asset.warnings.join(', ')}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Errors */}
+        {jobResult && jobResult.errors.length > 0 && (
+          <div style={{ marginBottom: '20px' }}>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '600', color: '#d32f2f' }}>
+              Errors:
+            </h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {jobResult.errors.map((error, i) => (
+                <div
+                  key={i}
+                  style={{
+                    padding: '10px',
+                    background: '#ffebee',
+                    border: '1px solid #ef9a9a',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                  }}
+                >
+                  <strong>Row {error.rowIndex + 1}:</strong> {error.error}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={() => {
+              setCurrentView('variables')
+              setCurrentJobId(null)
+              setJobStatus(null)
+              setJobResult(null)
+            }}
+            style={{
+              flex: 1,
+              padding: '10px',
+              background: '#2196F3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+            }}
+          >
+            Create Another Batch
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -1273,6 +1624,8 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
       {currentView === 'upload' && renderUploadView()}
       {currentView === 'mapping' && renderMappingView()}
       {currentView === 'preview' && renderPreviewView()}
+      {currentView === 'progress' && renderProgressView()}
+      {currentView === 'results' && renderResultsView()}
     </>
   )
 })
