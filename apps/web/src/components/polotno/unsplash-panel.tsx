@@ -7,7 +7,7 @@ import { ImagesGrid } from 'polotno/side-panel/images-grid'
 import { getImageSize, getCrop } from 'polotno/utils/image'
 import { useInfiniteAPI } from 'polotno/utils/use-api'
 import { InputGroup } from '@blueprintjs/core'
-import { MdPhotoLibrary } from '@meronex/icons/md/MdPhotoLibrary'
+import MdPhotoLibrary from '@meronex/icons/md/MdPhotoLibrary'
 
 // Your Unsplash API key
 const UNSPLASH_ACCESS_KEY = 'Kr_8PLGrcec6zRWEzXK9dm55U2lkjSYbsTRSB3mZC_w'
