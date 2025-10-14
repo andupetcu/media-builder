@@ -987,20 +987,6 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div style={{ padding: '15px', borderBottom: '1px solid #e0e0e0' }}>
-        <button
-          onClick={() => setCurrentView('variables')}
-          style={{
-            marginBottom: '10px',
-            padding: '4px 8px',
-            background: '#f5f5f5',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '12px',
-          }}
-        >
-          ← Back to Variables
-        </button>
         <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>
           Upload Data File
         </h3>
