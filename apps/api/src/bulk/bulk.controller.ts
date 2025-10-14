@@ -7,7 +7,10 @@ import {
   Param,
   ValidationPipe,
   UsePipes,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common'
+import { FileInterceptor } from '@nestjs/platform-express'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { TeamMemberGuard } from '../auth/guards/team-member.guard'
 import { CurrentUser } from '../auth/decorators/current-user.decorator'
@@ -30,6 +33,25 @@ const bulkValidationPipe = new ValidationPipe({
 @UsePipes(bulkValidationPipe)
 export class BulkController {
   constructor(private readonly bulkService: BulkService) {}
+
+  @Post('upload-csv')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadCsv(
+    @Param('teamId') teamId: string,
+    @Param('designId') designId: string,
+    @CurrentUser() user: any,
+    @UploadedFile() file: Express.Multer.File
+  ) {
+    return this.bulkService.uploadCsvFile(teamId, designId, user.id, file)
+  }
+
+  @Get('csv-data')
+  async getCsvData(
+    @Param('teamId') teamId: string,
+    @Param('designId') designId: string
+  ) {
+    return this.bulkService.getCsvDataForDesign(teamId, designId)
+  }
 
   @Post('preview')
   async preview(

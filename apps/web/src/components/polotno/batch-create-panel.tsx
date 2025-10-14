@@ -160,6 +160,62 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
     return () => dispose()
   }, [store])
 
+  // Restore CSV data when design is loaded
+  useEffect(() => {
+    const restoreCsvData = async () => {
+      // Check if batch config exists in store's custom data
+      const batchConfig = store.customData?.batchConfig
+
+      if (batchConfig?.csvPublicUrl) {
+        console.log('Found saved CSV data, restoring...')
+
+        try {
+          // Fetch the CSV file from the public URL
+          const response = await fetch(batchConfig.csvPublicUrl)
+          const blob = await response.blob()
+          const file = new File([blob], batchConfig.csvName, {
+            type: response.headers.get('content-type') || 'text/csv',
+          })
+
+          // Parse the CSV file
+          const data = await parseDataFile(file, {
+            maxRows: 1000,
+            skipEmptyRows: true,
+          })
+
+          // Restore state
+          setUploadedFile(file)
+          setParsedData(data)
+
+          const validation = validateParsedData(data)
+          setValidationErrors(validation.errors)
+          setValidationWarnings(validation.warnings)
+
+          // Auto-map columns based on existing variables
+          const autoMapping: Record<string, string> = {}
+          variables.forEach(variable => {
+            const matchingColumn = data.headers.find(
+              header => header.toLowerCase() === variable.name.toLowerCase()
+            )
+            if (matchingColumn) {
+              autoMapping[variable.name] = matchingColumn
+            }
+          })
+          setColumnMapping(autoMapping)
+
+          console.log('CSV data restored successfully')
+        } catch (error) {
+          console.error('Failed to restore CSV data:', error)
+        }
+      }
+    }
+
+    // Only restore once when component mounts and we have variables
+    if (variables.length > 0 && !parsedData) {
+      restoreCsvData()
+    }
+  }, [store, variables, parsedData])
+
   // Auto-create variables from selected columns
   useEffect(() => {
     if (selectedColumns.length > 0 && parsedData) {
@@ -410,6 +466,7 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
     setIsParsingFile(true)
 
     try {
+      // Parse the file
       const data = await parseDataFile(file, {
         maxRows: 1000,
         skipEmptyRows: true,
@@ -420,6 +477,39 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
       const validation = validateParsedData(data)
       setValidationErrors(validation.errors)
       setValidationWarnings(validation.warnings)
+
+      // Upload CSV to backend and save as asset
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+
+        const response = await apiClient.post(
+          `/teams/${params.teamId}/designs/${designId}/bulk/upload-csv`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        )
+
+        // Store CSV asset info in Polotno store's custom data
+        const currentCustomData = store.customData || {}
+        store.setCustomData({
+          ...currentCustomData,
+          batchConfig: {
+            csvAssetId: response.data.assetId,
+            csvName: response.data.name,
+            csvPublicUrl: response.data.publicUrl,
+            uploadedAt: new Date().toISOString(),
+          },
+        })
+
+        console.log('CSV uploaded and saved as asset:', response.data.assetId)
+      } catch (uploadError) {
+        console.error('Failed to upload CSV to backend:', uploadError)
+        // Continue anyway - user can still use the batch feature locally
+      }
 
       // Auto-map columns
       const autoMapping: Record<string, string> = {}
