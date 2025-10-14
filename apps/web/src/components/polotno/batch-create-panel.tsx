@@ -79,8 +79,8 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
   const designId = params.id as string
 
   // Get team ID from team store
-  const { currentTeam } = useTeamStore()
-  const teamId = currentTeam?.id
+  const { currentTeamId } = useTeamStore()
+  const teamId = currentTeamId
 
   // View state
   const [currentView, setCurrentView] = useState<PanelView>('upload')
