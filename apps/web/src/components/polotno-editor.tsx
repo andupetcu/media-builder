@@ -14,6 +14,7 @@ import { storeToVideo } from '@polotno/video-export'
 import { TeamImagesSection } from './polotno/team-images-panel'
 import { TeamUploadSection } from './polotno/team-upload-panel'
 import { QrSection } from './polotno/qr-code-panel'
+import { UnsplashSection } from './polotno/unsplash-panel'
 import '@blueprintjs/core/lib/css/blueprint.css'
 
 // Enable animations support
@@ -256,8 +257,15 @@ export const PolotnoEditor = observer(function PolotnoEditor({
     return () => clearInterval(interval)
   }, [isPlaying, store])
 
-  // Define custom sections including Team Images, Upload, and QR Code
-  const sections = [TeamUploadSection, TeamImagesSection, QrSection, ...DEFAULT_SECTIONS]
+  // Define custom sections including Team Images, Upload, QR Code, and Unsplash
+  // Filter out the default 'photos' section from DEFAULT_SECTIONS to use our custom Unsplash panel
+  const sections = [
+    TeamUploadSection,
+    TeamImagesSection,
+    UnsplashSection,
+    QrSection,
+    ...DEFAULT_SECTIONS.filter(section => section.name !== 'photos'),
+  ]
 
   return (
     <div className="flex flex-col h-full">
