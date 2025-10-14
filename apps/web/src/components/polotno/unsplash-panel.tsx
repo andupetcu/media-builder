@@ -117,7 +117,7 @@ export const UnsplashSection = {
   Tab: (props: any) => (
     <SectionTab name="Photos" {...props}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <MdPhoto size={24} />
+        <MdPhoto size={20} />
       </div>
     </SectionTab>
   ),

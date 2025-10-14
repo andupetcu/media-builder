@@ -33,7 +33,7 @@ export const QrSection = {
   Tab: (props: any) => (
     <SectionTab name="QR code" {...props}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <FaQrcode size={24} />
+        <FaQrcode size={20} />
       </div>
     </SectionTab>
   ),
