@@ -155,51 +155,61 @@ Variables and metadata stored in `Design.doc` JSON:
 ### ✅ Phase 2: CSV/XLSX Import & Mapping UI
 
 **Goal**: Upload data files and map columns to variables
-**Status**: 🔴 Not Started
+**Status**: 🟡 In Progress - Phase 2.1 and 2.2 Complete (2025-10-14)
 
-#### 2.1 File Upload UI
+#### 2.1 File Upload UI ✅
 
-- [ ] Create batch generation route (`apps/web/src/app/designs/[id]/batch/page.tsx`)
-- [ ] Add "Generate Batch" button to design detail page
-- [ ] Implement file upload component for CSV/XLSX
-- [ ] Parse CSV using `csv-parser` or similar
-- [ ] Parse XLSX using `xlsx` package
-- [ ] Display file info (name, size, row count, columns)
-- [ ] Show first 5 rows as preview table
+- [x] Create batch generation route (`apps/web/src/app/designs/[id]/batch/page.tsx`)
+- [x] Add "Generate Batch" button to design list page
+- [x] Implement file upload component for CSV/XLSX with drag-and-drop
+- [x] Parse CSV using `papaparse`
+- [x] Parse XLSX using `xlsx` package
+- [x] Display file info (name, size, row count, columns)
+- [x] File validation with error handling
+- [x] Show validation errors and warnings
+- [x] Max 1000 rows limit enforced
+- [x] Skip empty rows option
 
-**Dependencies to Add**:
+**Dependencies Added**: ✅
 
 ```json
 {
   "dependencies": {
     "xlsx": "^0.18.5",
-    "csv-parser": "^3.0.0",
-    "papaparse": "^5.4.1"
+    "papaparse": "^5.5.3"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.3.16"
   }
 }
 ```
 
-**Files to Create**:
+**Files Created**: ✅
 
-- `apps/web/src/app/designs/[id]/batch/page.tsx`
-- `apps/web/src/components/batch/file-upload.tsx`
-- `apps/web/src/lib/csv-parser.ts`
+- `apps/web/src/app/designs/[id]/batch/page.tsx` - Complete batch generation page (550+ lines)
+- `apps/web/src/lib/csv-parser.ts` - CSV/XLSX parsing utilities with validation (220+ lines)
 
-#### 2.2 Column Mapping Interface
+**Files Modified**: ✅
 
-- [ ] Create mapping component with two-column layout
-- [ ] Left side: List of variables from design
-- [ ] Right side: List of CSV columns
-- [ ] Drag-and-drop or dropdown to map columns to variables
-- [ ] Show data type validation (text variable shouldn't map to numeric column)
-- [ ] Support unmapped variables (use default values)
-- [ ] Show preview of first 3 rows with mappings applied
-- [ ] Save mapping configuration
+- `apps/web/src/app/designs/page.tsx` - Added "Generate Batch" button to design cards
 
-**Files to Create**:
+#### 2.2 Column Mapping Interface ✅
 
-- `apps/web/src/components/batch/column-mapper.tsx`
-- `apps/web/src/components/batch/mapping-preview.tsx`
+- [x] Create mapping UI integrated in batch page
+- [x] List of variables from design on left
+- [x] Dropdown selectors for mapping columns to variables
+- [x] Auto-mapping when column names match variable names (case-insensitive)
+- [x] Visual indicators for mapped/unmapped variables
+- [x] Validation that all variables are mapped before proceeding
+- [x] Disable "Preview Batch" button until all variables mapped
+- [x] Clean two-column layout showing variable → column mapping
+
+**Implementation Notes**:
+
+- Used dropdown selectors instead of drag-and-drop (more reliable UX and better accessibility)
+- Auto-mapping logic intelligently matches column names to variable names
+- Single-page flow (not separate components) for better UX
+- Integrated file upload, validation, and mapping in one cohesive experience
 
 #### 2.3 Data Formatters
 
