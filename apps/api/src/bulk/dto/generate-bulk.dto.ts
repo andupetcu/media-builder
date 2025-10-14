@@ -1,12 +1,17 @@
-import { IsArray, IsObject, IsString } from 'class-validator';
+import { IsArray, IsObject, IsString, IsNotEmpty } from 'class-validator'
+import { Type } from 'class-transformer'
 
 export class GenerateBulkDto {
   @IsArray()
-  rows!: Record<string, any>[];
+  @IsNotEmpty()
+  @Type(() => Object)
+  rows!: Record<string, any>[]
 
   @IsObject()
-  mapping!: Record<string, string>;
+  @IsNotEmpty()
+  mapping!: Record<string, string>
 
   @IsString()
-  designName!: string;
+  @IsNotEmpty()
+  designName!: string
 }

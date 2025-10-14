@@ -1,13 +1,33 @@
-import { Controller, Post, Get, Body, UseGuards, Param } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { TeamMemberGuard } from '../auth/guards/team-member.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { BulkService } from './bulk.service';
-import { PreviewBulkDto } from './dto/preview-bulk.dto';
-import { GenerateBulkDto } from './dto/generate-bulk.dto';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  UseGuards,
+  Param,
+  ValidationPipe,
+  UsePipes,
+} from '@nestjs/common'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { TeamMemberGuard } from '../auth/guards/team-member.guard'
+import { CurrentUser } from '../auth/decorators/current-user.decorator'
+import { BulkService } from './bulk.service'
+import { PreviewBulkDto } from './dto/preview-bulk.dto'
+import { GenerateBulkDto } from './dto/generate-bulk.dto'
+
+// Custom validation pipe that doesn't strip dynamic row data
+const bulkValidationPipe = new ValidationPipe({
+  whitelist: false, // Allow dynamic properties in row data
+  forbidNonWhitelisted: false,
+  transform: true,
+  transformOptions: {
+    enableImplicitConversion: true,
+  },
+})
 
 @Controller('teams/:teamId/designs/:designId/bulk')
 @UseGuards(JwtAuthGuard, TeamMemberGuard)
+@UsePipes(bulkValidationPipe)
 export class BulkController {
   constructor(private readonly bulkService: BulkService) {}
 
@@ -15,9 +35,9 @@ export class BulkController {
   async preview(
     @Param('teamId') teamId: string,
     @Param('designId') designId: string,
-    @Body() dto: PreviewBulkDto,
+    @Body() dto: PreviewBulkDto
   ) {
-    return this.bulkService.previewBatch(teamId, designId, dto);
+    return this.bulkService.previewBatch(teamId, designId, dto)
   }
 
   @Post('generate')
@@ -25,9 +45,14 @@ export class BulkController {
     @Param('teamId') teamId: string,
     @Param('designId') designId: string,
     @CurrentUser() user: any,
-    @Body() dto: GenerateBulkDto,
+    @Body() dto: GenerateBulkDto
   ) {
-    return this.bulkService.generateBatch(teamId, designId, user.id, dto);
+    console.log('Generate batch DTO:', {
+      rowCount: dto.rows?.length,
+      firstRow: dto.rows?.[0],
+      mapping: dto.mapping,
+    })
+    return this.bulkService.generateBatch(teamId, designId, user.id, dto)
   }
 }
 
@@ -39,11 +64,11 @@ export class JobsController {
 
   @Get(':jobId')
   async getJobStatus(@Param('jobId') jobId: string) {
-    return this.bulkService.getJobStatus(jobId);
+    return this.bulkService.getJobStatus(jobId)
   }
 
   @Get(':jobId/results')
   async getJobResults(@Param('jobId') jobId: string) {
-    return this.bulkService.getJobResults(jobId);
+    return this.bulkService.getJobResults(jobId)
   }
 }

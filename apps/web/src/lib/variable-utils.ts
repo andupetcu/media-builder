@@ -115,9 +115,19 @@ export function validateVariables(
  * Get default variable registry from design JSON
  */
 export function getVariableRegistry(designJson: any): VariableRegistry {
+  // Check top-level variables first
   if (designJson.variables && Array.isArray(designJson.variables)) {
     return { variables: designJson.variables }
   }
+
+  // Check if variables are stored in the first page's custom data (for Polotno compatibility)
+  if (designJson.pages && designJson.pages.length > 0) {
+    const firstPage = designJson.pages[0]
+    if (firstPage.custom?.variables && Array.isArray(firstPage.custom.variables)) {
+      return { variables: firstPage.custom.variables }
+    }
+  }
+
   return { variables: [] }
 }
 

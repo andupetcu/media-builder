@@ -74,6 +74,10 @@ interface JobResult {
 }
 
 export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
+  // Get design ID from URL params
+  const params = useParams()
+  const designId = params.id as string
+
   // View state
   const [currentView, setCurrentView] = useState<PanelView>('upload')
 
@@ -122,7 +126,12 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
     const loadVariables = () => {
       const designJson = store.toJSON()
       const registry = getVariableRegistry(designJson)
-      setVariables(registry.variables)
+
+      // Only update if variables have actually changed (prevent unnecessary re-renders)
+      setVariables(prev => {
+        const hasChanged = JSON.stringify(prev) !== JSON.stringify(registry.variables)
+        return hasChanged ? registry.variables : prev
+      })
     }
 
     loadVariables()
@@ -136,7 +145,13 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
     const updateSelection = () => {
       const selected = store.selectedElements
       const imageElement = selected.find((el: any) => el.type === 'image')
-      setSelectedImageElement(imageElement || null)
+
+      // Only update if selection has actually changed
+      setSelectedImageElement(prev => {
+        const newId = imageElement?.id
+        const prevId = prev?.id
+        return newId !== prevId ? imageElement || null : prev
+      })
     }
 
     updateSelection()
@@ -174,11 +189,18 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
 
       // Update design JSON with variables and save to store
       const designJson = store.toJSON()
-      const updatedJson = updateVariableRegistry(designJson, newVariables)
+      const updatedJson = updateVariableRegistry(designJson, { variables: newVariables })
 
-      // Force a store update by modifying a page (needed for Polotno reactivity)
+      // Store variables in the store's custom data
+      // We can't directly set the JSON, so we store it in the first page's custom data
       if (store.pages.length > 0) {
-        store.pages[0].set({ custom: { ...store.pages[0].custom, variablesUpdated: Date.now() } })
+        store.pages[0].set({
+          custom: {
+            ...store.pages[0].custom,
+            variables: newVariables,
+            variablesUpdated: Date.now(),
+          },
+        })
       }
 
       setVariables(newVariables)
@@ -186,8 +208,8 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
       // Auto-create column mapping (1:1 since column name = variable name)
       const mapping: Record<string, string> = {}
       newVariables.forEach(v => {
-        const originalColumn = selectedColumns.find(col =>
-          col.replace(/[^a-zA-Z0-9_]/g, '_') === v.name
+        const originalColumn = selectedColumns.find(
+          col => col.replace(/[^a-zA-Z0-9_]/g, '_') === v.name
         )
         if (originalColumn) {
           mapping[v.name] = originalColumn
@@ -195,7 +217,8 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
       })
       setColumnMapping(mapping)
     }
-  }, [selectedColumns, parsedData, store])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedColumns, parsedData])
 
   // Auto-detect variables from design
   const autoDetectVariables = () => {
@@ -468,8 +491,6 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
   }
 
   const generateBatch = async () => {
-    const params = useParams()
-    const designId = params.id as string
     const { currentTeamId } = useTeamStore.getState()
 
     if (!currentTeamId || !designId || !parsedData) {
@@ -484,6 +505,13 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
       // Get design name from store
       const designJson = store.toJSON()
       const designName = designJson.name || 'Batch'
+
+      console.log('Sending batch generation request:', {
+        rowCount: parsedData.rows.length,
+        firstRow: parsedData.rows[0],
+        mapping: columnMapping,
+        designName,
+      })
 
       const { data } = await apiClient.post(
         `/teams/${currentTeamId}/designs/${designId}/bulk/generate`,
@@ -1406,7 +1434,9 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
             fontWeight: '600',
           }}
         >
-          {isGenerating ? '⏳ Starting...' : `🚀 Generate ${previewData?.totalRows || parsedData?.rowCount || 0} Designs`}
+          {isGenerating
+            ? '⏳ Starting...'
+            : `🚀 Generate ${previewData?.totalRows || parsedData?.rowCount || 0} Designs`}
         </button>
       </div>
     </div>
@@ -1428,7 +1458,16 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
         </div>
 
         {/* Progress Content */}
-        <div style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div
+          style={{
+            flex: 1,
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           {generateError ? (
             <div
               style={{
@@ -1440,7 +1479,14 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
                 marginBottom: '15px',
               }}
             >
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#c62828', marginBottom: '5px' }}>
+              <div
+                style={{
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#c62828',
+                  marginBottom: '5px',
+                }}
+              >
                 Generation Error
               </div>
               <div style={{ fontSize: '13px', color: '#666' }}>{generateError}</div>
@@ -1457,14 +1503,7 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
                 }}
               >
                 <svg width="120" height="120" style={{ transform: 'rotate(-90deg)' }}>
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="50"
-                    stroke="#e0e0e0"
-                    strokeWidth="8"
-                    fill="none"
-                  />
+                  <circle cx="60" cy="60" r="50" stroke="#e0e0e0" strokeWidth="8" fill="none" />
                   <circle
                     cx="60"
                     cy="60"
@@ -1533,15 +1572,25 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
           Batch Complete!
         </h3>
         <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
-          {jobResult?.successCount || 0} of {jobResult?.totalRows || 0} designs generated successfully
+          {jobResult?.successCount || 0} of {jobResult?.totalRows || 0} designs generated
+          successfully
         </p>
       </div>
 
       {/* Results Content */}
       <div style={{ flex: 1, padding: '15px', overflow: 'auto' }}>
         {/* Summary */}
-        <div style={{ marginBottom: '20px', padding: '15px', background: '#e8f5e9', borderRadius: '6px' }}>
-          <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#2e7d32' }}>
+        <div
+          style={{
+            marginBottom: '20px',
+            padding: '15px',
+            background: '#e8f5e9',
+            borderRadius: '6px',
+          }}
+        >
+          <div
+            style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#2e7d32' }}
+          >
             Summary
           </div>
           <div style={{ fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -1558,7 +1607,7 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
               Generated Assets:
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {jobResult.assets.map((asset) => (
+              {jobResult.assets.map(asset => (
                 <div
                   key={asset.assetId}
                   style={{
@@ -1568,7 +1617,14 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
                     borderRadius: '6px',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      marginBottom: '8px',
+                    }}
+                  >
                     <div
                       style={{
                         width: '60px',
@@ -1612,7 +1668,14 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
         {/* Errors */}
         {jobResult && jobResult.errors.length > 0 && (
           <div style={{ marginBottom: '20px' }}>
-            <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '600', color: '#d32f2f' }}>
+            <h4
+              style={{
+                margin: '0 0 10px 0',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#d32f2f',
+              }}
+            >
               Errors:
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1850,10 +1913,14 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
                   borderRadius: '4px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}
+                >
                   <span style={{ fontSize: '16px' }}>{getVariableTypeIcon(variable.type)}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: '600' }}>{`{${variable.name}}`}</div>
+                    <div
+                      style={{ fontSize: '13px', fontWeight: '600' }}
+                    >{`{${variable.name}}`}</div>
                     <div style={{ fontSize: '11px', color: '#666' }}>{variable.label}</div>
                   </div>
                   <button
@@ -1900,9 +1967,19 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
         >
           <div style={{ fontWeight: '600', marginBottom: '8px' }}>💡 How to use:</div>
           <ul style={{ margin: 0, paddingLeft: '20px' }}>
-            <li><strong>Click "Insert"</strong> to add variable to selected text (or create new text)</li>
-            <li>Or manually type <code style={{ background: 'white', padding: '2px 4px', borderRadius: '2px' }}>{'{variableName}'}</code> in text</li>
-            <li>Variables show <strong>actual preview values</strong> from your first data row</li>
+            <li>
+              <strong>Click "Insert"</strong> to add variable to selected text (or create new text)
+            </li>
+            <li>
+              Or manually type{' '}
+              <code style={{ background: 'white', padding: '2px 4px', borderRadius: '2px' }}>
+                {'{variableName}'}
+              </code>{' '}
+              in text
+            </li>
+            <li>
+              Variables show <strong>actual preview values</strong> from your first data row
+            </li>
             <li>For images: select image, then use old variables panel to mark as variable</li>
           </ul>
         </div>
@@ -1996,7 +2073,9 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
               marginBottom: '15px',
             }}
           >
-            <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#2e7d32' }}>
+            <div
+              style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#2e7d32' }}
+            >
               📊 Batch Summary
             </div>
             <div style={{ fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -2016,7 +2095,14 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
                 marginBottom: '15px',
               }}
             >
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#c62828', marginBottom: '5px' }}>
+              <div
+                style={{
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#c62828',
+                  marginBottom: '5px',
+                }}
+              >
                 Error
               </div>
               <div style={{ fontSize: '13px', color: '#666' }}>{generateError}</div>
@@ -2041,9 +2127,7 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
               fontWeight: '600',
             }}
           >
-            {isGenerating
-              ? '⏳ Starting...'
-              : `🚀 Generate ${parsedData?.rowCount || 0} Designs`}
+            {isGenerating ? '⏳ Starting...' : `🚀 Generate ${parsedData?.rowCount || 0} Designs`}
           </button>
         </div>
       </div>

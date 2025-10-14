@@ -5,18 +5,17 @@ import { AppModule } from './app.module'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor'
 import { NestExpressApplication } from '@nestjs/platform-express'
-import { join } from 'path'
+import * as path from 'path'
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule)
 
-  // Serve static assets from /data/assets/public
-  const assetsPath = process.env.ASSETS_ROOT || '/data/assets'
-  app.useStaticAssets(join(assetsPath, 'public'), {
-    prefix: '/assets',
+  // Serve static assets since Nginx Proxy Manager is on a different server
+  const assetsRoot = process.env.ASSETS_ROOT || '/data/assets'
+  app.useStaticAssets(path.join(assetsRoot, 'public'), {
+    prefix: '/',
     setHeaders: res => {
-      res.set('Access-Control-Allow-Origin', '*')
-      res.set('Access-Control-Allow-Methods', 'GET, OPTIONS')
+      // Don't set CORS headers here - they're set globally by enableCors
       res.set('Cache-Control', 'public, max-age=31536000, immutable')
       res.set('X-Content-Type-Options', 'nosniff')
     },

@@ -30,15 +30,21 @@ export class TemplateEngineService {
   ): string {
     const variablePattern = /\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g
 
+    console.log(`Processing text: "${text}"`)
+    console.log('Available row data keys:', Object.keys(rowData))
+
     return text.replace(variablePattern, (match, varName) => {
+      console.log(`Found variable: ${varName}`)
       const column = mapping[varName]
 
       if (!column) {
+        console.log(`Variable ${varName} not found in mapping`)
         warnings.push(`Variable ${varName} not mapped to any column`)
         return match
       }
 
       const value = rowData[column]
+      console.log(`Mapped ${varName} -> ${column} -> ${value}`)
 
       if (value === undefined || value === null || value === '') {
         warnings.push(`No data for variable ${varName} in column ${column}`)
@@ -63,11 +69,20 @@ export class TemplateEngineService {
 
     // Process each page
     if (json.pages && Array.isArray(json.pages)) {
-      json.pages.forEach((page: any) => {
+      json.pages.forEach((page: any, pageIndex: number) => {
+        console.log(`Processing page ${pageIndex}, has ${page.children?.length || 0} children`)
+
         this.forEveryChild(page, element => {
+          console.log(
+            `Checking element: type=${element.type}, hasText=${!!element.text}, text="${element.text?.substring(0, 50)}"`
+          )
+
           // Handle text variables
           if (element.type === 'text' && element.text) {
-            element.text = this.replaceTextVariables(element.text, rowData, mapping, warnings)
+            const originalText = element.text
+            const replacedText = this.replaceTextVariables(element.text, rowData, mapping, warnings)
+            element.text = replacedText
+            console.log(`Text replacement: "${originalText}" -> "${replacedText}"`)
           }
 
           // Handle image variables
