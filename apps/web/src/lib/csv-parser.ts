@@ -29,7 +29,7 @@ export function parseCSV(file: File, options: ParseOptions = {}): Promise<Parsed
       header: true,
       skipEmptyLines: skipEmptyRows,
       dynamicTyping: true, // Auto-convert numbers and booleans
-      complete: (results) => {
+      complete: results => {
         let rows = results.data as Record<string, any>[]
 
         // Limit rows if needed
@@ -47,7 +47,7 @@ export function parseCSV(file: File, options: ParseOptions = {}): Promise<Parsed
           fileSize: file.size,
         })
       },
-      error: (error) => {
+      error: error => {
         reject(new Error(`CSV parsing failed: ${error.message}`))
       },
     })
@@ -62,7 +62,7 @@ export function parseXLSX(file: File, options: ParseOptions = {}): Promise<Parse
     const { maxRows, skipEmptyRows = true } = options
     const reader = new FileReader()
 
-    reader.onload = (e) => {
+    reader.onload = e => {
       try {
         const data = e.target?.result
         if (!data) {
@@ -88,8 +88,8 @@ export function parseXLSX(file: File, options: ParseOptions = {}): Promise<Parse
 
         // Skip empty rows if requested
         if (skipEmptyRows) {
-          rows = rows.filter((row) => {
-            return Object.values(row).some((val) => val !== '' && val !== null)
+          rows = rows.filter(row => {
+            return Object.values(row).some(val => val !== '' && val !== null)
           })
         }
 
@@ -124,10 +124,7 @@ export function parseXLSX(file: File, options: ParseOptions = {}): Promise<Parse
 /**
  * Parse any supported file (auto-detect CSV or XLSX)
  */
-export async function parseDataFile(
-  file: File,
-  options: ParseOptions = {}
-): Promise<ParsedData> {
+export async function parseDataFile(file: File, options: ParseOptions = {}): Promise<ParsedData> {
   const ext = file.name.split('.').pop()?.toLowerCase()
 
   if (ext === 'csv') {
@@ -169,19 +166,21 @@ export function validateParsedData(data: ParsedData): ValidationResult {
   }
 
   // Check for empty headers
-  const emptyHeaders = data.headers.filter((h) => !h || h.trim() === '')
+  const emptyHeaders = data.headers.filter(h => !h || h.trim() === '')
   if (emptyHeaders.length > 0) {
     warnings.push(`${emptyHeaders.length} column(s) have empty headers`)
   }
 
   // Check row count
   if (data.rowCount > 1000) {
-    warnings.push(`Large dataset: ${data.rowCount} rows. Maximum 1000 rows recommended for batch generation.`)
+    warnings.push(
+      `Large dataset: ${data.rowCount} rows. Maximum 1000 rows recommended for batch generation.`
+    )
   }
 
   // Check for rows with all empty values
-  const emptyRows = data.rows.filter((row) => {
-    return Object.values(row).every((val) => val === '' || val === null || val === undefined)
+  const emptyRows = data.rows.filter(row => {
+    return Object.values(row).every(val => val === '' || val === null || val === undefined)
   })
   if (emptyRows.length > 0) {
     warnings.push(`${emptyRows.length} row(s) are completely empty`)

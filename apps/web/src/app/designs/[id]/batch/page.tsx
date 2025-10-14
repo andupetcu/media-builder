@@ -87,9 +87,9 @@ export default function BatchGenerationPage() {
 
       // Auto-map columns if names match variable names
       const autoMapping: Record<string, string> = {}
-      variables.forEach((variable) => {
+      variables.forEach(variable => {
         const matchingColumn = data.headers.find(
-          (header) => header.toLowerCase() === variable.name.toLowerCase()
+          header => header.toLowerCase() === variable.name.toLowerCase()
         )
         if (matchingColumn) {
           autoMapping[variable.name] = matchingColumn
@@ -106,7 +106,7 @@ export default function BatchGenerationPage() {
 
   // Handle column mapping change
   const handleMappingChange = (variableName: string, columnName: string) => {
-    setColumnMapping((prev) => ({
+    setColumnMapping(prev => ({
       ...prev,
       [variableName]: columnName,
     }))
@@ -118,7 +118,7 @@ export default function BatchGenerationPage() {
     if (validationErrors.length > 0) return false
 
     // Check if all variables are mapped
-    const unmappedVariables = variables.filter((v) => !columnMapping[v.name])
+    const unmappedVariables = variables.filter(v => !columnMapping[v.name])
     return unmappedVariables.length === 0
   }
 
@@ -173,11 +173,7 @@ export default function BatchGenerationPage() {
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-md">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-yellow-400"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
+                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
                   <path
                     fillRule="evenodd"
                     d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
@@ -189,8 +185,8 @@ export default function BatchGenerationPage() {
                 <h3 className="text-sm font-medium text-yellow-800">No Variables Defined</h3>
                 <div className="mt-2 text-sm text-yellow-700">
                   <p>
-                    This design doesn't have any variables defined. You need to add variables
-                    before you can generate batch variations.
+                    This design doesn't have any variables defined. You need to add variables before
+                    you can generate batch variations.
                   </p>
                   <button
                     onClick={() => router.push(`/editor/${designId}`)}
@@ -206,9 +202,7 @@ export default function BatchGenerationPage() {
           <div className="space-y-6">
             {/* Step 1: Upload File */}
             <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">
-                Step 1: Upload Data File
-              </h2>
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Step 1: Upload Data File</h2>
 
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
                 <input
@@ -219,10 +213,7 @@ export default function BatchGenerationPage() {
                   id="file-upload"
                   disabled={isParsingFile}
                 />
-                <label
-                  htmlFor="file-upload"
-                  className="cursor-pointer flex flex-col items-center"
-                >
+                <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center">
                   <svg
                     className="h-12 w-12 text-gray-400"
                     stroke="currentColor"
@@ -241,8 +232,8 @@ export default function BatchGenerationPage() {
                       <span className="font-medium text-blue-600">{uploadedFile.name}</span>
                     ) : (
                       <>
-                        <span className="font-medium text-blue-600">Click to upload</span> or
-                        drag and drop
+                        <span className="font-medium text-blue-600">Click to upload</span> or drag
+                        and drop
                       </>
                     )}
                   </p>
@@ -323,7 +314,7 @@ export default function BatchGenerationPage() {
                 </h2>
 
                 <div className="space-y-4">
-                  {variables.map((variable) => (
+                  {variables.map(variable => (
                     <div
                       key={variable.name}
                       className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg"
@@ -337,11 +328,11 @@ export default function BatchGenerationPage() {
                       <div className="flex-1">
                         <select
                           value={columnMapping[variable.name] || ''}
-                          onChange={(e) => handleMappingChange(variable.name, e.target.value)}
+                          onChange={e => handleMappingChange(variable.name, e.target.value)}
                           className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
                         >
                           <option value="">-- Select Column --</option>
-                          {parsedData.headers.map((header) => (
+                          {parsedData.headers.map(header => (
                             <option key={header} value={header}>
                               {header}
                             </option>

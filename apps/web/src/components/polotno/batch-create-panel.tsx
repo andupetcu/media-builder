@@ -928,7 +928,9 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
               borderRadius: '6px',
             }}
           >
-            <div style={{ fontSize: '13px', fontWeight: '600', color: '#1976D2', marginBottom: '8px' }}>
+            <div
+              style={{ fontSize: '13px', fontWeight: '600', color: '#1976D2', marginBottom: '8px' }}
+            >
               ✓ File Parsed Successfully
             </div>
             <div style={{ fontSize: '12px', color: '#1565C0' }}>
@@ -949,7 +951,9 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
               borderRadius: '6px',
             }}
           >
-            <div style={{ fontSize: '12px', fontWeight: '600', color: '#c62828', marginBottom: '8px' }}>
+            <div
+              style={{ fontSize: '12px', fontWeight: '600', color: '#c62828', marginBottom: '8px' }}
+            >
               Validation Errors:
             </div>
             <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '11px', color: '#d32f2f' }}>
@@ -970,7 +974,9 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
               borderRadius: '6px',
             }}
           >
-            <div style={{ fontSize: '12px', fontWeight: '600', color: '#e65100', marginBottom: '8px' }}>
+            <div
+              style={{ fontSize: '12px', fontWeight: '600', color: '#e65100', marginBottom: '8px' }}
+            >
               Warnings:
             </div>
             <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '11px', color: '#f57c00' }}>
@@ -1127,9 +1133,7 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
                 animation: 'spin 1s linear infinite',
               }}
             />
-            <p style={{ marginTop: '15px', fontSize: '13px', color: '#666' }}>
-              Loading preview...
-            </p>
+            <p style={{ marginTop: '15px', fontSize: '13px', color: '#666' }}>Loading preview...</p>
           </div>
         )}
 
@@ -1143,7 +1147,9 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
               marginBottom: '15px',
             }}
           >
-            <div style={{ fontSize: '14px', fontWeight: '600', color: '#c62828', marginBottom: '5px' }}>
+            <div
+              style={{ fontSize: '14px', fontWeight: '600', color: '#c62828', marginBottom: '5px' }}
+            >
               Preview Error
             </div>
             <div style={{ fontSize: '13px', color: '#666' }}>{previewError}</div>

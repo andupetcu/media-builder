@@ -1,13 +1,13 @@
-import { IsArray, IsObject, IsOptional, IsNumber } from 'class-validator';
+import { IsArray, IsObject, IsOptional, IsNumber } from 'class-validator'
 
 export class PreviewBulkDto {
   @IsArray()
-  rows!: Record<string, any>[];
+  rows!: Record<string, any>[]
 
   @IsObject()
-  mapping!: Record<string, string>;
+  mapping!: Record<string, string>
 
   @IsOptional()
   @IsNumber()
-  previewCount?: number;
+  previewCount?: number
 }
