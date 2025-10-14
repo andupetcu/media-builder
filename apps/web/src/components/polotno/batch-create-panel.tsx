@@ -78,6 +78,10 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
   const params = useParams()
   const designId = params.id as string
 
+  // Get team ID from team store
+  const { currentTeam } = useTeamStore()
+  const teamId = currentTeam?.id
+
   // View state
   const [currentView, setCurrentView] = useState<PanelView>('upload')
 
@@ -480,11 +484,16 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
 
       // Upload CSV to backend and save as asset
       try {
+        if (!teamId) {
+          console.warn('No team ID available, skipping CSV upload to backend')
+          throw new Error('No team ID')
+        }
+
         const formData = new FormData()
         formData.append('file', file)
 
         const response = await apiClient.post(
-          `/teams/${params.teamId}/designs/${designId}/bulk/upload-csv`,
+          `/teams/${teamId}/designs/${designId}/bulk/upload-csv`,
           formData,
           {
             headers: {
