@@ -233,9 +233,9 @@ export default function AssetsPage() {
                 >
                   {/* Thumbnail */}
                   <div className="aspect-square bg-gray-200 flex items-center justify-center">
-                    {(asset.thumbnailUrl || (asset.kind === 'IMAGE' && asset.url)) ? (
+                    {((asset.thumbnailUrl && asset.thumbnailUrl.startsWith('http')) || (asset.kind === 'IMAGE' && asset.url)) ? (
                       <img
-                        src={asset.thumbnailUrl || asset.url}
+                        src={(asset.thumbnailUrl && asset.thumbnailUrl.startsWith('http')) ? asset.thumbnailUrl : asset.url}
                         alt={asset.name}
                         className="w-full h-full object-cover"
                       />
