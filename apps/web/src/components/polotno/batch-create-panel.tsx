@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { observer } from 'mobx-react-lite'
 import { SectionTab } from 'polotno/side-panel'
+import { useParams } from 'next/navigation'
 import MdCode from '@meronex/icons/md/MdCode'
 import {
   DesignVariable,
@@ -20,12 +21,29 @@ import {
   formatFileSize,
   type ParsedData,
 } from '@/lib/csv-parser'
+import { apiClient } from '@/lib/api-client'
+import { useTeamStore } from '@/stores/team-store'
 
 interface BatchCreatePanelProps {
   store: any
 }
 
 type PanelView = 'variables' | 'upload' | 'mapping' | 'preview'
+
+interface PreviewResult {
+  rowIndex: number
+  rowData: Record<string, any>
+  transformedJson: any
+  warnings: string[]
+}
+
+interface PreviewResponse {
+  designId: string
+  designName: string
+  totalRows: number
+  previewCount: number
+  previews: PreviewResult[]
+}
 
 export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
   // View state
@@ -55,6 +73,11 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
 
   // Column mapping state
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({})
+
+  // Preview state
+  const [previewData, setPreviewData] = useState<PreviewResponse | null>(null)
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false)
+  const [previewError, setPreviewError] = useState<string | null>(null)
 
   // Load variables from design JSON
   useEffect(() => {
@@ -321,6 +344,37 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
     if (validationErrors.length > 0) return false
     const unmappedVariables = variables.filter(v => !columnMapping[v.name])
     return unmappedVariables.length === 0
+  }
+
+  const loadPreview = async () => {
+    const params = useParams()
+    const designId = params.id as string
+    const { currentTeamId } = useTeamStore.getState()
+
+    if (!currentTeamId || !designId || !parsedData) {
+      setPreviewError('Missing required data')
+      return
+    }
+
+    setIsLoadingPreview(true)
+    setPreviewError(null)
+
+    try {
+      const { data } = await apiClient.post<PreviewResponse>(
+        `/teams/${currentTeamId}/designs/${designId}/bulk/preview`,
+        {
+          rows: parsedData.rows,
+          mapping: columnMapping,
+          previewCount: 5, // Preview first 5 rows
+        }
+      )
+      setPreviewData(data)
+    } catch (err: any) {
+      console.error('Preview failed:', err)
+      setPreviewError(err.response?.data?.message || 'Failed to load preview')
+    } finally {
+      setIsLoadingPreview(false)
+    }
   }
 
   // Render different views
@@ -1002,7 +1056,10 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
       {/* Action Button */}
       <div style={{ padding: '15px', borderTop: '1px solid #e0e0e0' }}>
         <button
-          onClick={() => setCurrentView('preview')}
+          onClick={() => {
+            setCurrentView('preview')
+            loadPreview()
+          }}
           disabled={!isReadyToPreview()}
           style={{
             width: '100%',
@@ -1044,68 +1101,160 @@ export const BatchCreatePanel = observer(({ store }: BatchCreatePanelProps) => {
           Preview & Generate
         </h3>
         <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
-          Ready to generate {parsedData?.rowCount || 0} designs
+          {previewData
+            ? `Showing ${previewData.previewCount} of ${previewData.totalRows} designs`
+            : `Ready to generate ${parsedData?.rowCount || 0} designs`}
         </p>
       </div>
 
       {/* Preview Content */}
       <div style={{ flex: 1, padding: '15px', overflow: 'auto' }}>
-        <div
-          style={{
-            padding: '20px',
-            background: '#f5f5f5',
-            borderRadius: '8px',
-            textAlign: 'center',
-          }}
-        >
-          <div style={{ fontSize: '48px', marginBottom: '15px' }}>🎨</div>
-          <h4 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Preview Coming Soon</h4>
-          <p style={{ margin: 0, fontSize: '13px', color: '#666' }}>
-            Visual preview and batch generation will be available in Phase 3
-          </p>
-        </div>
-
-        {/* Mapping Summary */}
-        <div style={{ marginTop: '20px' }}>
-          <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '600' }}>
-            Mapping Summary:
-          </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {variables.map(variable => (
-              <div
-                key={variable.name}
-                style={{
-                  padding: '10px',
-                  background: 'white',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                }}
-              >
-                <strong>{`{${variable.name}}`}</strong> → {columnMapping[variable.name]}
-              </div>
-            ))}
+        {isLoadingPreview && (
+          <div
+            style={{
+              padding: '20px',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                display: 'inline-block',
+                width: '40px',
+                height: '40px',
+                border: '4px solid #f3f3f3',
+                borderTop: '4px solid #FF9800',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+              }}
+            />
+            <p style={{ marginTop: '15px', fontSize: '13px', color: '#666' }}>
+              Loading preview...
+            </p>
           </div>
-        </div>
+        )}
+
+        {previewError && (
+          <div
+            style={{
+              padding: '15px',
+              background: '#ffebee',
+              borderLeft: '4px solid #f44336',
+              borderRadius: '4px',
+              marginBottom: '15px',
+            }}
+          >
+            <div style={{ fontSize: '14px', fontWeight: '600', color: '#c62828', marginBottom: '5px' }}>
+              Preview Error
+            </div>
+            <div style={{ fontSize: '13px', color: '#666' }}>{previewError}</div>
+          </div>
+        )}
+
+        {previewData && !isLoadingPreview && (
+          <>
+            {/* Preview Results */}
+            <div style={{ marginBottom: '20px' }}>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '600' }}>
+                Preview Results:
+              </h4>
+              {previewData.previews.map((preview, index) => (
+                <div
+                  key={preview.rowIndex}
+                  style={{
+                    marginBottom: '15px',
+                    padding: '12px',
+                    background: 'white',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      marginBottom: '8px',
+                      color: '#333',
+                    }}
+                  >
+                    Row {preview.rowIndex + 1}
+                  </div>
+                  <div style={{ fontSize: '12px', marginBottom: '8px' }}>
+                    {Object.entries(preview.rowData).map(([key, value]) => (
+                      <div
+                        key={key}
+                        style={{
+                          padding: '4px 0',
+                          borderBottom: '1px solid #f5f5f5',
+                        }}
+                      >
+                        <strong>{key}:</strong> {String(value)}
+                      </div>
+                    ))}
+                  </div>
+                  {preview.warnings.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: '8px',
+                        padding: '8px',
+                        background: '#fff3cd',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                      }}
+                    >
+                      <div style={{ fontWeight: '600', marginBottom: '4px' }}>Warnings:</div>
+                      {preview.warnings.map((warning, i) => (
+                        <div key={i}>• {warning}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Mapping Summary */}
+            <div>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '600' }}>
+                Mapping Summary:
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {variables.map(variable => (
+                  <div
+                    key={variable.name}
+                    style={{
+                      padding: '10px',
+                      background: 'white',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <strong>{`{${variable.name}}`}</strong> → {columnMapping[variable.name]}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Action Button */}
       <div style={{ padding: '15px', borderTop: '1px solid #e0e0e0' }}>
         <button
-          onClick={() => alert('Batch generation will be available in Phase 3')}
+          onClick={() => alert('Full batch generation will be available in Phase 4')}
+          disabled={!previewData || isLoadingPreview}
           style={{
             width: '100%',
             padding: '12px',
-            background: '#FF9800',
+            background: previewData && !isLoadingPreview ? '#FF9800' : '#ccc',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
-            cursor: 'pointer',
+            cursor: previewData && !isLoadingPreview ? 'pointer' : 'not-allowed',
             fontSize: '14px',
             fontWeight: '600',
           }}
         >
-          🚀 Generate {parsedData?.rowCount || 0} Designs
+          🚀 Generate {previewData?.totalRows || parsedData?.rowCount || 0} Designs
         </button>
       </div>
     </div>
