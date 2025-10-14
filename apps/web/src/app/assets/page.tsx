@@ -49,7 +49,17 @@ export default function AssetsPage() {
 
     try {
       const { data } = await apiClient.get(`/teams/${currentTeamId}/assets`)
-      setAssets(data)
+      // Map backend response to frontend interface
+      const mappedAssets = data.map((asset: any) => ({
+        id: asset.id,
+        name: asset.name,
+        kind: asset.kind,
+        size: asset.sizeBytes,
+        url: asset.publicUrl,
+        thumbnailUrl: asset.thumbnailUrl,
+        createdAt: asset.createdAt,
+      }))
+      setAssets(mappedAssets)
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch assets')
     } finally {

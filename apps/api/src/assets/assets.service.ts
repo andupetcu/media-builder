@@ -24,7 +24,7 @@ export class AssetsService {
   }
 
   async findTeamAssets(teamId: string, kind?: AssetKind) {
-    return this.prisma.asset.findMany({
+    const assets = await this.prisma.asset.findMany({
       where: {
         teamId,
         ...(kind && { kind }),
@@ -53,6 +53,12 @@ export class AssetsService {
         },
       },
     })
+
+    // Convert BigInt to number for JSON serialization
+    return assets.map(asset => ({
+      ...asset,
+      sizeBytes: Number(asset.sizeBytes),
+    }))
   }
 
   async findById(id: string, teamId: string) {
@@ -73,7 +79,11 @@ export class AssetsService {
       throw new NotFoundException('Asset not found')
     }
 
-    return asset
+    // Convert BigInt to number for JSON serialization
+    return {
+      ...asset,
+      sizeBytes: Number(asset.sizeBytes),
+    }
   }
 
   async createAsset(
