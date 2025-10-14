@@ -65,11 +65,11 @@ export function extractVariablesFromDesign(designJson: any): {
 
   if (designJson.pages) {
     designJson.pages.forEach((page: any) => {
-      forEveryChild(page, (element) => {
+      forEveryChild(page, element => {
         // Extract text variables
         if (element.type === 'text' && element.text) {
           const vars = extractVariablesFromText(element.text)
-          vars.forEach((v) => textVariables.add(v))
+          vars.forEach(v => textVariables.add(v))
         }
 
         // Extract image variables
@@ -99,14 +99,10 @@ export function validateVariables(
 } {
   const { textVariables, imageVariables } = extractVariablesFromDesign(designJson)
   const usedVariables = new Set([...textVariables, ...imageVariables])
-  const definedVariables = new Set(registry.variables.map((v) => v.name))
+  const definedVariables = new Set(registry.variables.map(v => v.name))
 
-  const undefinedVariables = Array.from(usedVariables).filter(
-    (v) => !definedVariables.has(v)
-  )
-  const unusedVariables = Array.from(definedVariables).filter(
-    (v) => !usedVariables.has(v)
-  )
+  const undefinedVariables = Array.from(usedVariables).filter(v => !definedVariables.has(v))
+  const unusedVariables = Array.from(definedVariables).filter(v => !usedVariables.has(v))
 
   return {
     valid: undefinedVariables.length === 0,
@@ -128,10 +124,7 @@ export function getVariableRegistry(designJson: any): VariableRegistry {
 /**
  * Update variable registry in design JSON
  */
-export function updateVariableRegistry(
-  designJson: any,
-  registry: VariableRegistry
-): any {
+export function updateVariableRegistry(designJson: any, registry: VariableRegistry): any {
   return {
     ...designJson,
     variables: registry.variables,

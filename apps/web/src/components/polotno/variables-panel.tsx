@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { observer } from 'mobx-react-lite'
 import { SectionTab } from 'polotno/side-panel'
-import { MdCode } from '@meronex/icons/md/MdCode'
+import MdCode from '@meronex/icons/md/MdCode'
 import {
   DesignVariable,
   VariableType,
@@ -66,19 +66,19 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
   const autoDetectVariables = () => {
     const designJson = store.toJSON()
     const { textVariables, imageVariables } = extractVariablesFromDesign(designJson)
-    const existingNames = new Set(variables.map((v) => v.name))
+    const existingNames = new Set(variables.map(v => v.name))
 
     const newVariables: DesignVariable[] = []
 
     // Add text variables
-    textVariables.forEach((varName) => {
+    textVariables.forEach(varName => {
       if (!existingNames.has(varName)) {
         newVariables.push(createVariable(varName, 'text'))
       }
     })
 
     // Add image variables
-    imageVariables.forEach((varName) => {
+    imageVariables.forEach(varName => {
       if (!existingNames.has(varName)) {
         newVariables.push(createVariable(varName, 'image'))
       }
@@ -120,10 +120,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
     }
 
     // Check for duplicates (except when editing)
-    if (
-      !editingVariable &&
-      variables.some((v) => v.name === formName)
-    ) {
+    if (!editingVariable && variables.some(v => v.name === formName)) {
       setFormError('Variable name already exists')
       return
     }
@@ -141,9 +138,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
 
     if (editingVariable) {
       // Update existing variable
-      updatedVariables = variables.map((v) =>
-        v.name === editingVariable ? newVariable : v
-      )
+      updatedVariables = variables.map(v => (v.name === editingVariable ? newVariable : v))
     } else {
       // Add new variable
       updatedVariables = [...variables, newVariable]
@@ -156,7 +151,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
   // Handle delete variable
   const handleDeleteVariable = (varName: string) => {
     if (confirm(`Are you sure you want to delete variable "${varName}"?`)) {
-      const updatedVariables = variables.filter((v) => v.name !== varName)
+      const updatedVariables = variables.filter(v => v.name !== varName)
       saveVariables(updatedVariables)
     }
   }
@@ -219,7 +214,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
     }
 
     // Check if variable already exists
-    if (variables.some((v) => v.name === varName)) {
+    if (variables.some(v => v.name === varName)) {
       alert('Variable name already exists')
       return
     }
@@ -255,7 +250,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
       const designJson = store.toJSON()
       const { imageVariables } = extractVariablesFromDesign(designJson)
       if (!imageVariables.includes(varName)) {
-        const updatedVariables = variables.filter((v) => v.name !== varName)
+        const updatedVariables = variables.filter(v => v.name !== varName)
         saveVariables(updatedVariables)
       }
     }
@@ -313,7 +308,9 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
             borderBottom: '1px solid #90CAF9',
           }}
         >
-          <div style={{ fontSize: '13px', color: '#1976D2', fontWeight: '600', marginBottom: '8px' }}>
+          <div
+            style={{ fontSize: '13px', color: '#1976D2', fontWeight: '600', marginBottom: '8px' }}
+          >
             🖼️ Image Selected
           </div>
           {selectedImageElement.custom?.variable ? (
@@ -394,7 +391,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
             <input
               type="text"
               value={formName}
-              onChange={(e) => setFormName(e.target.value)}
+              onChange={e => setFormName(e.target.value)}
               placeholder="e.g., customerName"
               disabled={!!editingVariable}
               style={{
@@ -409,12 +406,10 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
           </div>
 
           <div style={{ marginBottom: '10px' }}>
-            <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>
-              Type
-            </label>
+            <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>Type</label>
             <select
               value={formType}
-              onChange={(e) => setFormType(e.target.value as VariableType)}
+              onChange={e => setFormType(e.target.value as VariableType)}
               style={{
                 width: '100%',
                 padding: '6px 8px',
@@ -439,7 +434,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
             <input
               type="text"
               value={formLabel}
-              onChange={(e) => setFormLabel(e.target.value)}
+              onChange={e => setFormLabel(e.target.value)}
               placeholder="e.g., Customer Name"
               style={{
                 width: '100%',
@@ -458,7 +453,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
             <input
               type="text"
               value={formSampleValue}
-              onChange={(e) => setFormSampleValue(e.target.value)}
+              onChange={e => setFormSampleValue(e.target.value)}
               placeholder="e.g., John Doe"
               style={{
                 width: '100%',
@@ -477,7 +472,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
             <input
               type="text"
               value={formDefaultValue}
-              onChange={(e) => setFormDefaultValue(e.target.value)}
+              onChange={e => setFormDefaultValue(e.target.value)}
               placeholder="e.g., [Not Provided]"
               style={{
                 width: '100%',
@@ -544,7 +539,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {variables.map((variable) => (
+            {variables.map(variable => (
               <div
                 key={variable.name}
                 style={{
@@ -584,9 +579,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
                         >
                           {`{${variable.name}}`}
                         </div>
-                        <div style={{ fontSize: '11px', color: '#757575' }}>
-                          {variable.label}
-                        </div>
+                        <div style={{ fontSize: '11px', color: '#757575' }}>{variable.label}</div>
                       </div>
                     </div>
                   </div>
@@ -685,9 +678,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
         <p style={{ margin: '0 0 5px 0' }}>
           💡 <strong>Tip:</strong> Use variables in text with {'{variableName}'} syntax.
         </p>
-        <p style={{ margin: 0 }}>
-          Select a text element and click "Insert" to add a variable.
-        </p>
+        <p style={{ margin: 0 }}>Select a text element and click "Insert" to add a variable.</p>
       </div>
     </div>
   )
