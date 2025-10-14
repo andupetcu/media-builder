@@ -258,13 +258,15 @@ export const PolotnoEditor = observer(function PolotnoEditor({
   }, [isPlaying, store])
 
   // Define custom sections including Team Images, Upload, QR Code, and Unsplash
-  // Filter out the default 'photos' section from DEFAULT_SECTIONS to use our custom Unsplash panel
+  // Filter out the default 'photos', 'upload', and 'images' sections to use our custom ones
   const sections = [
     TeamUploadSection,
     TeamImagesSection,
     UnsplashSection,
     QrSection,
-    ...DEFAULT_SECTIONS.filter(section => section.name !== 'photos'),
+    ...DEFAULT_SECTIONS.filter(
+      section => !['photos', 'upload', 'images'].includes(section.name)
+    ),
   ]
 
   return (
