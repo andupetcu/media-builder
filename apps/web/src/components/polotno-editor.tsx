@@ -11,8 +11,6 @@ import { PagesTimeline } from 'polotno/pages-timeline'
 import { createStore } from 'polotno/model/store'
 import { unstable_setAnimationsEnabled } from 'polotno/config'
 import { storeToVideo } from '@polotno/video-export'
-import { TeamImagesSection } from './polotno/team-images-panel'
-import { TeamUploadSection } from './polotno/team-upload-panel'
 import { QrSection } from './polotno/qr-code-panel'
 import { UnsplashSection } from './polotno/unsplash-panel'
 import '@blueprintjs/core/lib/css/blueprint.css'
@@ -257,16 +255,12 @@ export const PolotnoEditor = observer(function PolotnoEditor({
     return () => clearInterval(interval)
   }, [isPlaying, store])
 
-  // Define custom sections including Team Images, Upload, QR Code, and Unsplash
-  // Filter out the default 'photos', 'upload', and 'images' sections to use our custom ones
+  // Define custom sections: QR Code and Unsplash
+  // Filter out the default 'photos' section to use our custom Unsplash panel with API key
   const sections = [
-    TeamUploadSection,
-    TeamImagesSection,
     UnsplashSection,
     QrSection,
-    ...DEFAULT_SECTIONS.filter(
-      section => !['photos', 'upload', 'images'].includes(section.name)
-    ),
+    ...DEFAULT_SECTIONS.filter(section => section.name !== 'photos'),
   ]
 
   return (
