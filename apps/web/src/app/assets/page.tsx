@@ -30,6 +30,8 @@ export default function AssetsPage() {
   const [assets, setAssets] = useState<Asset[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  const [editingAssetId, setEditingAssetId] = useState<string | null>(null)
+  const [editedName, setEditedName] = useState('')
 
   useEffect(() => {
     initializeTeams()
@@ -70,6 +72,44 @@ export default function AssetsPage() {
   const handleLogout = async () => {
     await logout()
     router.push('/login')
+  }
+
+  const handleStartEditName = (asset: Asset) => {
+    setEditingAssetId(asset.id)
+    setEditedName(asset.name)
+  }
+
+  const handleSaveEditName = async (assetId: string) => {
+    if (!currentTeamId || !editedName.trim()) return
+
+    try {
+      await apiClient.put(`/teams/${currentTeamId}/assets/${assetId}`, {
+        name: editedName.trim(),
+      })
+      setAssets(prev => prev.map(a => (a.id === assetId ? { ...a, name: editedName.trim() } : a)))
+      setEditingAssetId(null)
+      setEditedName('')
+    } catch (err: any) {
+      alert('Failed to update asset name: ' + (err.response?.data?.message || err.message))
+    }
+  }
+
+  const handleCancelEditName = () => {
+    setEditingAssetId(null)
+    setEditedName('')
+  }
+
+  const handleDeleteAsset = async (assetId: string) => {
+    if (!currentTeamId) return
+
+    if (!confirm('Are you sure you want to delete this asset?')) return
+
+    try {
+      await apiClient.delete(`/teams/${currentTeamId}/assets/${assetId}`)
+      setAssets(prev => prev.filter(a => a.id !== assetId))
+    } catch (err: any) {
+      alert('Failed to delete asset: ' + (err.response?.data?.message || err.message))
+    }
   }
 
   const formatFileSize = (bytes: number) => {
@@ -262,9 +302,108 @@ export default function AssetsPage() {
 
                   {/* Info */}
                   <div className="p-4">
-                    <h3 className="text-sm font-medium text-gray-900 truncate" title={asset.name}>
-                      {asset.name}
-                    </h3>
+                    {editingAssetId === asset.id ? (
+                      <div className="flex items-center space-x-2 mb-2">
+                        <input
+                          type="text"
+                          value={editedName}
+                          onChange={e => setEditedName(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleSaveEditName(asset.id)
+                            if (e.key === 'Escape') handleCancelEditName()
+                          }}
+                          className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => handleSaveEditName(asset.id)}
+                          className="p-1 text-green-600 hover:text-green-700"
+                          title="Save"
+                        >
+                          <svg
+                            className="h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={handleCancelEditName}
+                          className="p-1 text-red-600 hover:text-red-700"
+                          title="Cancel"
+                        >
+                          <svg
+                            className="h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between mb-2">
+                        <h3
+                          className="text-sm font-medium text-gray-900 truncate"
+                          title={asset.name}
+                        >
+                          {asset.name}
+                        </h3>
+                        <div className="flex items-center space-x-1">
+                          <button
+                            onClick={() => handleStartEditName(asset)}
+                            className="p-1 text-gray-400 hover:text-gray-600"
+                            title="Rename"
+                          >
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                              />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAsset(asset.id)}
+                            className="p-1 text-red-400 hover:text-red-600"
+                            title="Delete"
+                          >
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     <div className="mt-2 flex items-center justify-between">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getKindColor(asset.kind)}`}

@@ -13,6 +13,7 @@ import { unstable_setAnimationsEnabled, setUploadFunc } from 'polotno/config'
 import { storeToVideo } from '@polotno/video-export'
 import { QrSection } from './polotno/qr-code-panel'
 import { UnsplashSection } from './polotno/unsplash-panel'
+import { TeamAssetsSection } from './polotno/team-assets-panel'
 import { apiClient } from '@/lib/api-client'
 import { useTeamStore } from '@/stores/team-store'
 import '@blueprintjs/core/lib/css/blueprint.css'
@@ -285,6 +286,7 @@ export const PolotnoEditor = observer(function PolotnoEditor({
   // Define custom sections: QR Code and Unsplash
   // Filter out the default 'photos' section to use our custom Unsplash panel with API key
   const sections = [
+    TeamAssetsSection,
     UnsplashSection,
     QrSection,
     ...DEFAULT_SECTIONS.filter(section => section.name !== 'photos'),

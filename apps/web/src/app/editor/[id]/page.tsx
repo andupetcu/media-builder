@@ -46,6 +46,8 @@ export default function EditorPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [polotnoKey, setPolotnoKey] = useState('')
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editedName, setEditedName] = useState('')
 
   useEffect(() => {
     initializeTeams()
@@ -112,6 +114,32 @@ export default function EditorPage() {
     router.push('/designs')
   }
 
+  const handleStartEditName = () => {
+    if (design) {
+      setEditedName(design.name)
+      setIsEditingName(true)
+    }
+  }
+
+  const handleSaveName = async () => {
+    if (!currentTeamId || !designId || !editedName.trim()) return
+
+    try {
+      await apiClient.put(`/teams/${currentTeamId}/designs/${designId}`, {
+        name: editedName.trim(),
+      })
+      setDesign(prev => (prev ? { ...prev, name: editedName.trim() } : null))
+      setIsEditingName(false)
+    } catch (err: any) {
+      alert('Failed to update design name: ' + (err.response?.data?.message || err.message))
+    }
+  }
+
+  const handleCancelEditName = () => {
+    setIsEditingName(false)
+    setEditedName('')
+  }
+
   const handleLogout = async () => {
     await logout()
     router.push('/login')
@@ -171,7 +199,82 @@ export default function EditorPage() {
                     />
                   </svg>
                 </button>
-                <h1 className="text-lg font-semibold text-gray-900">{design.name}</h1>
+                {isEditingName ? (
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={editedName}
+                      onChange={e => setEditedName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleSaveName()
+                        if (e.key === 'Escape') handleCancelEditName()
+                      }}
+                      className="px-2 py-1 border border-gray-300 rounded-md text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleSaveName}
+                      className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-md"
+                      title="Save"
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={handleCancelEditName}
+                      className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md"
+                      title="Cancel"
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <h1 className="text-lg font-semibold text-gray-900">{design.name}</h1>
+                    <button
+                      onClick={handleStartEditName}
+                      className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md"
+                      title="Edit name"
+                    >
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                )}
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                   {design.status}
                 </span>

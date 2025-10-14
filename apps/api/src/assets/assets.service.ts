@@ -179,7 +179,7 @@ export class AssetsService {
       updateData.tags = dto.tags
     }
 
-    return this.prisma.asset.update({
+    const updated = await this.prisma.asset.update({
       where: { id: asset.id },
       data: updateData,
       include: {
@@ -192,6 +192,12 @@ export class AssetsService {
         },
       },
     })
+
+    // Convert BigInt to number for JSON serialization
+    return {
+      ...updated,
+      sizeBytes: Number(updated.sizeBytes),
+    }
   }
 
   async deleteAsset(id: string, teamId: string) {
