@@ -32,7 +32,9 @@ export const QrSection = {
   name: 'qr',
   Tab: (props: any) => (
     <SectionTab name="QR code" {...props}>
-      <FaQrcode size={24} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <FaQrcode size={24} />
+      </div>
     </SectionTab>
   ),
   // we need observer to update component automatically on any store changes
