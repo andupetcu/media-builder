@@ -408,12 +408,6 @@ export const PolotnoEditor = observer(function PolotnoEditor({
             <span className="text-xs text-gray-600 ml-2">{currentTime.toFixed(1)}s</span>
           </div>
         )}
-
-        {/* Info about Magic Resize */}
-        <div className="text-xs text-gray-600">
-          💡 Tip: Magic Resize is enabled - resize canvas with proportional scaling using
-          store.setSize(w, h, true)
-        </div>
       </div>
 
       {/* Polotno Editor */}

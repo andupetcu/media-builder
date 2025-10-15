@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 async function cleanup() {
   try {
@@ -14,14 +14,14 @@ async function cleanup() {
           { slug: { contains: 'row' } },
         ],
       },
-    });
+    })
 
-    console.log(`Deleted ${result.count} batch export assets from database`);
+    console.log(`Deleted ${result.count} batch export assets from database`)
   } catch (error) {
-    console.error('Error cleaning up assets:', error);
+    console.error('Error cleaning up assets:', error)
   } finally {
-    await prisma.$disconnect();
+    await prisma.$disconnect()
   }
 }
 
-cleanup();
+cleanup()

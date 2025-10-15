@@ -48,9 +48,7 @@ export const CustomToolbar = observer(
           icon="film"
         />
         <MenuItem
-          text={
-            isExportingVideo ? `Exporting Video ${videoExportProgress}%` : 'Export Video (MP4)'
-          }
+          text={isExportingVideo ? `Exporting Video ${videoExportProgress}%` : 'Export Video (MP4)'}
           onClick={onExportVideo}
           disabled={isExporting || isExportingVideo}
           icon="video"

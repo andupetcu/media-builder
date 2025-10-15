@@ -46,10 +46,7 @@ export class BulkController {
   }
 
   @Get('csv-data')
-  async getCsvData(
-    @Param('teamId') teamId: string,
-    @Param('designId') designId: string
-  ) {
+  async getCsvData(@Param('teamId') teamId: string, @Param('designId') designId: string) {
     return this.bulkService.getCsvDataForDesign(teamId, designId)
   }
 

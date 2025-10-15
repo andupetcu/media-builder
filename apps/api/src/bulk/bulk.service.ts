@@ -24,7 +24,11 @@ export class BulkService {
     }
 
     // Validate file type
-    const allowedMimeTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+    const allowedMimeTypes = [
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ]
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException('Only CSV and Excel files are allowed')
     }
@@ -37,7 +41,8 @@ export class BulkService {
 
     // Get assets root and public base URL
     const assetsRoot = this.configService.get<string>('ASSETS_ROOT') || '/data/assets'
-    const publicBaseUrl = this.configService.get<string>('PUBLIC_BASE_URL') || 'http://localhost:3001'
+    const publicBaseUrl =
+      this.configService.get<string>('PUBLIC_BASE_URL') || 'http://localhost:3001'
 
     // Calculate hash
     const hash = crypto.createHash('sha256').update(file.buffer).digest('hex')
@@ -68,7 +73,10 @@ export class BulkService {
 
     // Create filename
     const fileExt = path.extname(file.originalname)
-    const slug = path.basename(file.originalname, fileExt).toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    const slug = path
+      .basename(file.originalname, fileExt)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
     const filename = `${hash16}_${slug}${fileExt}`
     const filePath = path.join(fullDir, filename)
 
