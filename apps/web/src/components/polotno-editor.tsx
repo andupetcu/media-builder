@@ -332,7 +332,10 @@ export const PolotnoEditor = observer(function PolotnoEditor({
   const templatesSection = defaultSections.find(s => s.name === 'templates')
   const elementsSection = defaultSections.find(s => s.name === 'elements')
   const textSection = defaultSections.find(s => s.name === 'text')
-  const uploadsSection = defaultSections.find(s => s.name === 'uploads')
+  // Try both 'uploads' and 'upload' as Polotno might use either
+  const uploadsSection =
+    defaultSections.find(s => s.name === 'uploads') ||
+    defaultSections.find(s => s.name === 'upload')
   const videosSection = defaultSections.find(s => s.name === 'videos')
   const backgroundSection = defaultSections.find(s => s.name === 'background')
   const layersSection = defaultSections.find(s => s.name === 'layers')

@@ -98,9 +98,9 @@ export class StorageService {
     if (!relativePath.startsWith('public/')) {
       return undefined
     }
-    // Remove 'public/' prefix and prepend with /api/assets
+    // Remove 'public/' prefix - files are served from root '/' by NestJS static assets
     const assetPath = relativePath.replace('public/', '')
-    return `${this.publicBaseUrl}/api/assets/${assetPath}`
+    return `${this.publicBaseUrl}/${assetPath}`
   }
 
   /**
