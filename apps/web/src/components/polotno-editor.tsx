@@ -18,6 +18,7 @@ import { BatchCreateSection } from './polotno/batch-create-panel'
 import { CustomToolbar } from './polotno/custom-toolbar'
 import { apiClient } from '@/lib/api-client'
 import { useTeamStore } from '@/stores/team-store'
+import { initializePolotnoBrandingRemoval } from '@/lib/remove-polotno-branding'
 import '@blueprintjs/core/lib/css/blueprint.css'
 
 // Enable animations support
@@ -85,6 +86,12 @@ export const PolotnoEditor = observer(function PolotnoEditor({
   const [currentTime, setCurrentTime] = useState(0)
   const [videoExportProgress, setVideoExportProgress] = useState(0)
   const [isExportingVideo, setIsExportingVideo] = useState(false)
+
+  // Remove Polotno branding
+  useEffect(() => {
+    const cleanup = initializePolotnoBrandingRemoval()
+    return cleanup
+  }, [])
 
   useEffect(() => {
     // Load initial document if provided

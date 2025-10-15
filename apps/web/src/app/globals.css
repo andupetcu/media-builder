@@ -18,10 +18,23 @@ body {
     rgb(var(--background-start-rgb));
 }
 
-/* Hide Polotno branding */
+/* Hide Polotno branding - comprehensive approach */
 a[href*="polotno.com"],
+a[href*="polotno"],
 div[class*="polotno-credit"],
-[class*="powered-by"] {
+div[class*="credit"],
+[class*="powered-by"],
+[class*="watermark"],
+/* Target by content */
+a:has-text("polotno"),
+div:has-text("Powered by"),
+div:has-text("polotno"),
+/* Target common Polotno credit containers */
+.polotno-workspace a[target="_blank"],
+.bp4-navbar a[href*="polotno"],
+/* Target bottom-right positioned elements that are common for credits */
+div[style*="position: absolute"][style*="bottom"][style*="right"] a,
+div[style*="position: fixed"][style*="bottom"][style*="right"] a {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
@@ -29,4 +42,12 @@ div[class*="polotno-credit"],
   width: 0 !important;
   position: absolute !important;
   pointer-events: none !important;
+  overflow: hidden !important;
+}
+
+/* Additional aggressive hiding for any text containing polotno or powered */
+*[class*="polotno"]::after,
+*[class*="credit"]::after,
+*[class*="powered"]::after {
+  display: none !important;
 }
