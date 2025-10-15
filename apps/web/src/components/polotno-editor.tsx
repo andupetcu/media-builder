@@ -54,6 +54,21 @@ interface PolotnoEditorProps {
   polotnoKey: string
   onSave?: (json: any, thumbnail?: string) => void
   autoSaveInterval?: number
+  designName?: string
+  designStatus?: string
+  isEditingName?: boolean
+  editedName?: string
+  onStartEditName?: () => void
+  onSaveName?: () => void
+  onCancelEditName?: () => void
+  onEditNameChange?: (name: string) => void
+  onBack?: () => void
+  onSaveVersion?: () => void
+  onDashboard?: () => void
+  onDesigns?: () => void
+  onAssets?: () => void
+  onLogout?: () => void
+  userName?: string
 }
 
 // Wrap with observer for reactive state
@@ -62,6 +77,21 @@ export const PolotnoEditor = observer(function PolotnoEditor({
   polotnoKey,
   onSave,
   autoSaveInterval = 20000, // 20 seconds default
+  designName,
+  designStatus,
+  isEditingName,
+  editedName,
+  onStartEditName,
+  onSaveName,
+  onCancelEditName,
+  onEditNameChange,
+  onBack,
+  onSaveVersion,
+  onDashboard,
+  onDesigns,
+  onAssets,
+  onLogout,
+  userName,
 }: PolotnoEditorProps) {
   const [store] = useState(() => {
     const s = createStore({
@@ -86,6 +116,7 @@ export const PolotnoEditor = observer(function PolotnoEditor({
   const [currentTime, setCurrentTime] = useState(0)
   const [videoExportProgress, setVideoExportProgress] = useState(0)
   const [isExportingVideo, setIsExportingVideo] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   // Remove Polotno branding
   useEffect(() => {
@@ -328,6 +359,80 @@ export const PolotnoEditor = observer(function PolotnoEditor({
     <div className="flex flex-col h-full">
       {/* Canvas Controls Bar */}
       <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center space-x-4">
+        {/* Menu Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="px-3 py-1 text-sm rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 flex items-center space-x-1"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span>Menu</span>
+          </button>
+
+          {isMenuOpen && (
+            <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+              {onBack && (
+                <button
+                  onClick={() => { onBack(); setIsMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  <span>Back</span>
+                </button>
+              )}
+              {onDashboard && (
+                <button
+                  onClick={() => { onDashboard(); setIsMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Dashboard
+                </button>
+              )}
+              {onDesigns && (
+                <button
+                  onClick={() => { onDesigns(); setIsMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Designs
+                </button>
+              )}
+              {onAssets && (
+                <button
+                  onClick={() => { onAssets(); setIsMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Assets
+                </button>
+              )}
+              {onSaveVersion && (
+                <button
+                  onClick={() => { onSaveVersion(); setIsMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Save Version
+                </button>
+              )}
+              {userName && (
+                <div className="px-4 py-2 text-sm text-gray-500 border-t border-gray-200">
+                  {userName}
+                </div>
+              )}
+              {onLogout && (
+                <button
+                  onClick={() => { onLogout(); setIsMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-t border-gray-200"
+                >
+                  Logout
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Rulers Toggle */}
         <button
           onClick={() => store.toggleRulers()}
@@ -376,6 +481,70 @@ export const PolotnoEditor = observer(function PolotnoEditor({
 
         {/* Spacer */}
         <div className="flex-1" />
+
+        {/* Design Name and Status */}
+        {designName && (
+          <div className="flex items-center space-x-2">
+            {isEditingName ? (
+              <>
+                <input
+                  type="text"
+                  value={editedName}
+                  onChange={e => onEditNameChange?.(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') onSaveName?.()
+                    if (e.key === 'Escape') onCancelEditName?.()
+                  }}
+                  className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  autoFocus
+                />
+                <button
+                  onClick={onSaveName}
+                  className="p-1 text-green-600 hover:text-green-700"
+                  title="Save"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={onCancelEditName}
+                  className="p-1 text-red-600 hover:text-red-700"
+                  title="Cancel"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="text-sm font-semibold text-gray-900">{designName}</span>
+                {onStartEditName && (
+                  <button
+                    onClick={onStartEditName}
+                    className="p-1 text-gray-400 hover:text-gray-600"
+                    title="Edit name"
+                  >
+                    <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                      />
+                    </svg>
+                  </button>
+                )}
+                {designStatus && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    {designStatus}
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         {/* Save Now Button with Last Saved Tooltip */}
         <button
