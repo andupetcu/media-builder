@@ -249,23 +249,6 @@ export default function DesignsPage() {
                   </button>
                 </div>
               </div>
-              <div className="flex items-center space-x-4">
-                {teams.length > 0 && (
-                  <span className="text-sm text-gray-600">
-                    Team:{' '}
-                    <span className="font-medium">
-                      {teams.find(t => t.id === currentTeamId)?.name}
-                    </span>
-                  </span>
-                )}
-                <span className="text-sm text-gray-700">{user?.name}</span>
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md"
-                >
-                  Logout
-                </button>
-              </div>
             </div>
           </div>
         </nav>

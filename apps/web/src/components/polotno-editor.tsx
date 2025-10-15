@@ -437,22 +437,6 @@ export const PolotnoEditor = observer(function PolotnoEditor({
                   Save Version
                 </button>
               )}
-              {userName && (
-                <div className="px-4 py-2 text-sm text-gray-500 border-t border-gray-200">
-                  {userName}
-                </div>
-              )}
-              {onLogout && (
-                <button
-                  onClick={() => {
-                    onLogout()
-                    setIsMenuOpen(false)
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-t border-gray-200"
-                >
-                  Logout
-                </button>
-              )}
             </div>
           )}
         </div>
