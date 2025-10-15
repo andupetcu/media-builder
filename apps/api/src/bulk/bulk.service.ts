@@ -67,7 +67,7 @@ export class BulkService {
 
     try {
       await fs.mkdir(fullDir, { recursive: true })
-    } catch (error) {
+    } catch (error: any) {
       throw new BadRequestException(`Failed to create upload directory: ${error.message}`)
     }
 
@@ -83,7 +83,7 @@ export class BulkService {
     // Write file
     try {
       await fs.writeFile(filePath, file.buffer)
-    } catch (error) {
+    } catch (error: any) {
       throw new BadRequestException(`Failed to save file: ${error.message}`)
     }
 

@@ -237,7 +237,7 @@ export class AssetsService {
         // Delete from storage
         try {
           await this.storage.deleteFile(asset.path)
-        } catch (err) {
+        } catch (err: any) {
           this.logger.warn(`Failed to delete file for asset ${id}: ${err.message}`)
         }
 
@@ -245,7 +245,7 @@ export class AssetsService {
           try {
             const thumbPath = asset.thumbnailUrl.replace(publicBaseUrl, 'public')
             await this.storage.deleteFile(thumbPath)
-          } catch (err) {
+          } catch (err: any) {
             this.logger.warn(`Failed to delete thumbnail for asset ${id}: ${err.message}`)
           }
         }
@@ -254,7 +254,7 @@ export class AssetsService {
           try {
             const proxyPath = asset.proxyUrl.replace(publicBaseUrl, 'public')
             await this.storage.deleteFile(proxyPath)
-          } catch (err) {
+          } catch (err: any) {
             this.logger.warn(`Failed to delete proxy for asset ${id}: ${err.message}`)
           }
         }
@@ -266,7 +266,7 @@ export class AssetsService {
 
         deletedAssets.push(id)
         this.logger.log(`Deleted asset ${id}`)
-      } catch (err) {
+      } catch (err: any) {
         this.logger.error(`Failed to delete asset ${id}: ${err.message}`)
         failedAssets.push({ id, error: err.message })
       }
