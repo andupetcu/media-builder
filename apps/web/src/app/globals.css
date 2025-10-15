@@ -17,19 +17,3 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
-
-/* Polotno Size Panel - Center icons with text */
-/* Target the size preset buttons in the resize panel */
-.polotno-side-panel button[style*="height:80px"] {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.polotno-side-panel button[style*="height:80px"] > div:first-child {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  margin-bottom: 4px !important;
-}
