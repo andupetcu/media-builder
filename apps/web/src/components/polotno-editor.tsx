@@ -18,7 +18,6 @@ import { BatchCreateSection } from './polotno/batch-create-panel'
 import { CustomToolbar } from './polotno/custom-toolbar'
 import { apiClient } from '@/lib/api-client'
 import { useTeamStore } from '@/stores/team-store'
-import { initializePolotnoBrandingRemoval } from '@/lib/remove-polotno-branding'
 import '@blueprintjs/core/lib/css/blueprint.css'
 
 // Enable animations support
@@ -117,12 +116,6 @@ export const PolotnoEditor = observer(function PolotnoEditor({
   const [videoExportProgress, setVideoExportProgress] = useState(0)
   const [isExportingVideo, setIsExportingVideo] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-
-  // Remove Polotno branding
-  useEffect(() => {
-    const cleanup = initializePolotnoBrandingRemoval()
-    return cleanup
-  }, [])
 
   useEffect(() => {
     // Load initial document if provided
@@ -369,7 +362,12 @@ export const PolotnoEditor = observer(function PolotnoEditor({
             className="px-3 py-1 text-sm rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 flex items-center space-x-1"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
             </svg>
             <span>Menu</span>
           </button>
@@ -378,18 +376,29 @@ export const PolotnoEditor = observer(function PolotnoEditor({
             <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
               {onBack && (
                 <button
-                  onClick={() => { onBack(); setIsMenuOpen(false); }}
+                  onClick={() => {
+                    onBack()
+                    setIsMenuOpen(false)
+                  }}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
                   </svg>
                   <span>Back</span>
                 </button>
               )}
               {onDashboard && (
                 <button
-                  onClick={() => { onDashboard(); setIsMenuOpen(false); }}
+                  onClick={() => {
+                    onDashboard()
+                    setIsMenuOpen(false)
+                  }}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
                   Dashboard
@@ -397,7 +406,10 @@ export const PolotnoEditor = observer(function PolotnoEditor({
               )}
               {onDesigns && (
                 <button
-                  onClick={() => { onDesigns(); setIsMenuOpen(false); }}
+                  onClick={() => {
+                    onDesigns()
+                    setIsMenuOpen(false)
+                  }}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
                   Designs
@@ -405,7 +417,10 @@ export const PolotnoEditor = observer(function PolotnoEditor({
               )}
               {onAssets && (
                 <button
-                  onClick={() => { onAssets(); setIsMenuOpen(false); }}
+                  onClick={() => {
+                    onAssets()
+                    setIsMenuOpen(false)
+                  }}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
                   Assets
@@ -413,7 +428,10 @@ export const PolotnoEditor = observer(function PolotnoEditor({
               )}
               {onSaveVersion && (
                 <button
-                  onClick={() => { onSaveVersion(); setIsMenuOpen(false); }}
+                  onClick={() => {
+                    onSaveVersion()
+                    setIsMenuOpen(false)
+                  }}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
                   Save Version
@@ -426,7 +444,10 @@ export const PolotnoEditor = observer(function PolotnoEditor({
               )}
               {onLogout && (
                 <button
-                  onClick={() => { onLogout(); setIsMenuOpen(false); }}
+                  onClick={() => {
+                    onLogout()
+                    setIsMenuOpen(false)
+                  }}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-t border-gray-200"
                 >
                   Logout
@@ -507,7 +528,12 @@ export const PolotnoEditor = observer(function PolotnoEditor({
                   title="Save"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 </button>
                 <button
@@ -516,7 +542,12 @@ export const PolotnoEditor = observer(function PolotnoEditor({
                   title="Cancel"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </>
