@@ -17,3 +17,16 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+
+/* Hide Polotno branding */
+a[href*="polotno.com"],
+div[class*="polotno-credit"],
+[class*="powered-by"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  position: absolute !important;
+  pointer-events: none !important;
+}
