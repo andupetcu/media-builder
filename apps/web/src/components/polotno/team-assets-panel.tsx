@@ -23,6 +23,8 @@ export const TeamAssetsPanel = observer(({ store }: { store: any }) => {
   const [assets, setAssets] = useState<Asset[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set())
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     if (currentTeamId) {
@@ -74,8 +76,67 @@ export const TeamAssetsPanel = observer(({ store }: { store: any }) => {
       await apiClient.delete(`/teams/${currentTeamId}/assets/${assetId}`)
       // Reload assets
       await loadAssets()
+      setSelectedAssets(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(assetId)
+        return newSet
+      })
     } catch (err: any) {
       alert('Failed to delete asset: ' + (err.response?.data?.message || err.message))
+    }
+  }
+
+  const toggleSelectAsset = (assetId: string, event: React.MouseEvent) => {
+    event.stopPropagation()
+    setSelectedAssets(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(assetId)) {
+        newSet.delete(assetId)
+      } else {
+        newSet.add(assetId)
+      }
+      return newSet
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedAssets.size === assets.length) {
+      setSelectedAssets(new Set())
+    } else {
+      setSelectedAssets(new Set(assets.map(a => a.id)))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (!currentTeamId || selectedAssets.size === 0) return
+
+    if (
+      !confirm(
+        `Are you sure you want to delete ${selectedAssets.size} asset${selectedAssets.size > 1 ? 's' : ''}?`
+      )
+    )
+      return
+
+    setIsDeleting(true)
+
+    try {
+      const { data } = await apiClient.post(`/teams/${currentTeamId}/assets/bulk-delete`, {
+        assetIds: Array.from(selectedAssets),
+      })
+
+      // Reload assets
+      await loadAssets()
+      setSelectedAssets(new Set())
+
+      if (data.failed.length > 0) {
+        alert(
+          `Deleted ${data.totalDeleted} asset(s). Failed to delete ${data.totalFailed} asset(s).`
+        )
+      }
+    } catch (err: any) {
+      alert('Failed to delete assets: ' + (err.response?.data?.message || err.message))
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -121,6 +182,44 @@ export const TeamAssetsPanel = observer(({ store }: { store: any }) => {
 
   return (
     <div style={{ height: '100%', overflow: 'auto', padding: '10px' }}>
+      {/* Selection Controls */}
+      <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '12px' }}>
+          <input
+            type="checkbox"
+            checked={selectedAssets.size === assets.length && assets.length > 0}
+            onChange={toggleSelectAll}
+            style={{ marginRight: '4px', cursor: 'pointer' }}
+          />
+          Select All
+        </label>
+        {selectedAssets.size > 0 && (
+          <>
+            <span style={{ fontSize: '12px', color: '#666' }}>
+              ({selectedAssets.size} selected)
+            </span>
+            <button
+              onClick={handleBulkDelete}
+              disabled={isDeleting}
+              style={{
+                marginLeft: 'auto',
+                padding: '4px 12px',
+                background: '#ef4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                fontSize: '12px',
+                cursor: 'pointer',
+                opacity: isDeleting ? 0.6 : 1,
+              }}
+              title="Delete selected assets"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Selected'}
+            </button>
+          </>
+        )}
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
         {assets.map(asset => (
           <div
@@ -131,10 +230,26 @@ export const TeamAssetsPanel = observer(({ store }: { store: any }) => {
               borderRadius: '8px',
               overflow: 'hidden',
               cursor: 'pointer',
-              border: '1px solid #e0e0e0',
+              border: selectedAssets.has(asset.id) ? '2px solid #3b82f6' : '1px solid #e0e0e0',
             }}
             onClick={() => handleImageClick(asset)}
           >
+            {/* Selection Checkbox */}
+            <div style={{ position: 'absolute', top: '4px', left: '4px', zIndex: 10 }}>
+              <input
+                type="checkbox"
+                checked={selectedAssets.has(asset.id)}
+                onChange={e => toggleSelectAsset(asset.id, e)}
+                onClick={e => e.stopPropagation()}
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  cursor: 'pointer',
+                  accentColor: '#3b82f6',
+                }}
+              />
+            </div>
+
             <img
               src={asset.publicUrl}
               alt={asset.name}

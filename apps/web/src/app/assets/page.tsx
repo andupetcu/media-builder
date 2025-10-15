@@ -32,6 +32,8 @@ export default function AssetsPage() {
   const [error, setError] = useState('')
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null)
   const [editedName, setEditedName] = useState('')
+  const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set())
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     initializeTeams()
@@ -107,8 +109,66 @@ export default function AssetsPage() {
     try {
       await apiClient.delete(`/teams/${currentTeamId}/assets/${assetId}`)
       setAssets(prev => prev.filter(a => a.id !== assetId))
+      setSelectedAssets(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(assetId)
+        return newSet
+      })
     } catch (err: any) {
       alert('Failed to delete asset: ' + (err.response?.data?.message || err.message))
+    }
+  }
+
+  const toggleSelectAsset = (assetId: string) => {
+    setSelectedAssets(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(assetId)) {
+        newSet.delete(assetId)
+      } else {
+        newSet.add(assetId)
+      }
+      return newSet
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedAssets.size === assets.length) {
+      setSelectedAssets(new Set())
+    } else {
+      setSelectedAssets(new Set(assets.map(a => a.id)))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (!currentTeamId || selectedAssets.size === 0) return
+
+    if (
+      !confirm(
+        `Are you sure you want to delete ${selectedAssets.size} asset${selectedAssets.size > 1 ? 's' : ''}?`
+      )
+    )
+      return
+
+    setIsDeleting(true)
+
+    try {
+      const { data } = await apiClient.post(`/teams/${currentTeamId}/assets/bulk-delete`, {
+        assetIds: Array.from(selectedAssets),
+      })
+
+      // Remove deleted assets from the list
+      setAssets(prev => prev.filter(a => !data.deleted.includes(a.id)))
+      setSelectedAssets(new Set())
+
+      if (data.failed.length > 0) {
+        alert(
+          `Deleted ${data.totalDeleted} asset(s). Failed to delete ${data.totalFailed} asset(s).`
+        )
+      }
+    } catch (err: any) {
+      alert('Failed to delete assets: ' + (err.response?.data?.message || err.message))
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -222,6 +282,38 @@ export default function AssetsPage() {
             </button>
           </div>
 
+          {/* Bulk Actions Toolbar */}
+          {selectedAssets.size > 0 && (
+            <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <span className="text-sm font-medium text-blue-900">
+                  {selectedAssets.size} asset{selectedAssets.size > 1 ? 's' : ''} selected
+                </span>
+                <button
+                  onClick={() => setSelectedAssets(new Set())}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Clear selection
+                </button>
+              </div>
+              <button
+                onClick={handleBulkDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+                <span>{isDeleting ? 'Deleting...' : 'Delete Selected'}</span>
+              </button>
+            </div>
+          )}
+
           {/* Error Message */}
           {error && (
             <div className="mb-6 rounded-md bg-red-50 p-4">
@@ -265,14 +357,41 @@ export default function AssetsPage() {
           )}
 
           {!isLoading && !teamsLoading && assets.length > 0 && (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {assets.map(asset => (
-                <div
-                  key={asset.id}
-                  className="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow"
-                >
+            <>
+              {/* Select All Checkbox */}
+              <div className="mb-4 flex items-center">
+                <input
+                  type="checkbox"
+                  checked={selectedAssets.size === assets.length && assets.length > 0}
+                  onChange={toggleSelectAll}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                />
+                <label className="ml-2 text-sm text-gray-700 cursor-pointer" onClick={toggleSelectAll}>
+                  Select All ({assets.length})
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {assets.map(asset => (
+                  <div
+                    key={asset.id}
+                    className={`bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow relative ${
+                      selectedAssets.has(asset.id) ? 'ring-2 ring-blue-500' : ''
+                    }`}
+                  >
                   {/* Thumbnail */}
-                  <div className="aspect-square bg-gray-200 flex items-center justify-center">
+                  <div className="aspect-square bg-gray-200 flex items-center justify-center relative">
+                    {/* Selection Checkbox */}
+                    <div className="absolute top-2 left-2 z-10">
+                      <input
+                        type="checkbox"
+                        checked={selectedAssets.has(asset.id)}
+                        onChange={() => toggleSelectAsset(asset.id)}
+                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer bg-white"
+                        onClick={e => e.stopPropagation()}
+                      />
+                    </div>
+
                     {asset.kind === 'IMAGE' && asset.url ? (
                       <img
                         src={asset.url}
@@ -419,6 +538,7 @@ export default function AssetsPage() {
                 </div>
               ))}
             </div>
+            </>
           )}
         </main>
       </div>

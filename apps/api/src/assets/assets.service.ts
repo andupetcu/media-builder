@@ -224,4 +224,60 @@ export class AssetsService {
 
     this.logger.log(`Deleted asset ${asset.id}`)
   }
+
+  async deleteMultipleAssets(assetIds: string[], teamId: string) {
+    const publicBaseUrl = this.config.get<string>('PUBLIC_BASE_URL') || ''
+    const deletedAssets: string[] = []
+    const failedAssets: { id: string; error: string }[] = []
+
+    for (const id of assetIds) {
+      try {
+        const asset = await this.findById(id, teamId)
+
+        // Delete from storage
+        try {
+          await this.storage.deleteFile(asset.path)
+        } catch (err) {
+          this.logger.warn(`Failed to delete file for asset ${id}: ${err.message}`)
+        }
+
+        if (asset.thumbnailUrl) {
+          try {
+            const thumbPath = asset.thumbnailUrl.replace(publicBaseUrl, 'public')
+            await this.storage.deleteFile(thumbPath)
+          } catch (err) {
+            this.logger.warn(`Failed to delete thumbnail for asset ${id}: ${err.message}`)
+          }
+        }
+
+        if (asset.proxyUrl) {
+          try {
+            const proxyPath = asset.proxyUrl.replace(publicBaseUrl, 'public')
+            await this.storage.deleteFile(proxyPath)
+          } catch (err) {
+            this.logger.warn(`Failed to delete proxy for asset ${id}: ${err.message}`)
+          }
+        }
+
+        // Delete from database
+        await this.prisma.asset.delete({
+          where: { id: asset.id },
+        })
+
+        deletedAssets.push(id)
+        this.logger.log(`Deleted asset ${id}`)
+      } catch (err) {
+        this.logger.error(`Failed to delete asset ${id}: ${err.message}`)
+        failedAssets.push({ id, error: err.message })
+      }
+    }
+
+    return {
+      deleted: deletedAssets,
+      failed: failedAssets,
+      totalRequested: assetIds.length,
+      totalDeleted: deletedAssets.length,
+      totalFailed: failedAssets.length,
+    }
+  }
 }

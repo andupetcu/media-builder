@@ -3,6 +3,7 @@ import {
   Get,
   Put,
   Delete,
+  Post,
   Param,
   Query,
   Body,
@@ -50,5 +51,15 @@ export class AssetsController {
   @ApiOperation({ summary: 'Delete asset' })
   async deleteAsset(@Param('teamId') teamId: string, @Param('id') id: string) {
     await this.assetsService.deleteAsset(id, teamId)
+  }
+
+  @Post('bulk-delete')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete multiple assets' })
+  async deleteMultipleAssets(
+    @Param('teamId') teamId: string,
+    @Body() body: { assetIds: string[] }
+  ) {
+    return this.assetsService.deleteMultipleAssets(body.assetIds, teamId)
   }
 }
