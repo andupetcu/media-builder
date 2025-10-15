@@ -284,15 +284,37 @@ export const PolotnoEditor = observer(function PolotnoEditor({
     return () => clearInterval(interval)
   }, [isPlaying, store])
 
-  // Define custom sections: Batch Create, Team Assets, QR Code and Unsplash
+  // Define custom sections in the order requested by user
+  // Order: Templates, Assets, Elements, Text, Brand, Uploads, Photos, Videos, Background, QR Code, Layers, Resize
   // Filter out the default 'photos' section to use our custom Unsplash panel with API key
+  const defaultSections = DEFAULT_SECTIONS.filter(section => section.name !== 'photos')
+
+  // Extract specific sections from DEFAULT_SECTIONS by name
+  const templatesSection = defaultSections.find(s => s.name === 'templates')
+  const elementsSection = defaultSections.find(s => s.name === 'elements')
+  const textSection = defaultSections.find(s => s.name === 'text')
+  const uploadsSection = defaultSections.find(s => s.name === 'uploads')
+  const videosSection = defaultSections.find(s => s.name === 'videos')
+  const backgroundSection = defaultSections.find(s => s.name === 'background')
+  const layersSection = defaultSections.find(s => s.name === 'layers')
+  const sizeSection = defaultSections.find(s => s.name === 'size')
+
+  // Build sections array in the requested order, filtering out any undefined sections
   const sections = [
-    BatchCreateSection,
+    templatesSection,
     TeamAssetsSection,
-    UnsplashSection,
+    elementsSection,
+    textSection,
+    // Brand section would go here when implemented
+    uploadsSection,
+    UnsplashSection, // Photos
+    videosSection,
+    backgroundSection,
     QrSection,
-    ...DEFAULT_SECTIONS.filter(section => section.name !== 'photos'),
-  ]
+    layersSection,
+    sizeSection,
+    BatchCreateSection, // Add batch create at the end
+  ].filter(Boolean)
 
   return (
     <div className="flex flex-col h-full">
@@ -440,7 +462,7 @@ export const PolotnoEditor = observer(function PolotnoEditor({
       <div className="flex-1 overflow-hidden">
         <PolotnoContainer className="h-full">
           <SidePanelWrap>
-            <SidePanel store={store} sections={sections} />
+            <SidePanel store={store} sections={sections} defaultSection="templates" />
           </SidePanelWrap>
           <WorkspaceWrap>
             <Toolbar store={store} downloadButtonEnabled />
