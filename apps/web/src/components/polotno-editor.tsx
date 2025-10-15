@@ -15,6 +15,7 @@ import { QrSection } from './polotno/qr-code-panel'
 import { UnsplashSection } from './polotno/unsplash-panel'
 import { TeamAssetsSection } from './polotno/team-assets-panel'
 import { BatchCreateSection } from './polotno/batch-create-panel'
+import { CustomToolbar } from './polotno/custom-toolbar'
 import { apiClient } from '@/lib/api-client'
 import { useTeamStore } from '@/stores/team-store'
 import '@blueprintjs/core/lib/css/blueprint.css'
@@ -318,91 +319,6 @@ export const PolotnoEditor = observer(function PolotnoEditor({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Save Status Bar */}
-      <div className="bg-gray-100 border-b border-gray-200 px-4 py-2 flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={handleManualSave}
-            disabled={isSaving}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-sm"
-          >
-            {isSaving ? 'Saving...' : 'Save Now'}
-          </button>
-          {lastSaved && (
-            <span className="text-sm text-gray-600">
-              Last saved: {lastSaved.toLocaleTimeString()}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center space-x-2">
-          {/* Animation Playback Controls */}
-          <div className="flex items-center space-x-1 border-r border-gray-300 pr-2 mr-2">
-            {!isPlaying ? (
-              <button
-                onClick={handlePlay}
-                className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm"
-                title="Play animations"
-              >
-                ▶ Play
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={handlePause}
-                  className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm"
-                  title="Pause"
-                >
-                  ⏸ Pause
-                </button>
-                <button
-                  onClick={handleStop}
-                  className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm"
-                  title="Stop"
-                >
-                  ⏹ Stop
-                </button>
-              </>
-            )}
-            {isPlaying && (
-              <span className="text-xs text-gray-600 ml-2">{currentTime.toFixed(1)}s</span>
-            )}
-          </div>
-
-          {/* Export Controls */}
-          <button
-            onClick={handleExportPNG}
-            disabled={isExporting}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed text-sm"
-          >
-            {isExporting ? 'Exporting...' : 'Export PNG'}
-          </button>
-          <button
-            onClick={handleExportJPEG}
-            disabled={isExporting}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed text-sm"
-          >
-            {isExporting ? 'Exporting...' : 'Export JPEG'}
-          </button>
-          <button
-            onClick={handleExportGIF}
-            disabled={isExporting}
-            className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-orange-300 disabled:cursor-not-allowed text-sm"
-          >
-            {isExporting ? 'Exporting...' : 'Export GIF'}
-          </button>
-          <button
-            onClick={handleExportVideo}
-            disabled={isExportingVideo}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-sm"
-          >
-            {isExportingVideo ? `Exporting Video ${videoExportProgress}%` : 'Export Video (MP4)'}
-          </button>
-          {(isSaving || isExporting || isExportingVideo) && (
-            <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-blue-600 border-r-transparent"></div>
-          )}
-        </div>
-      </div>
-
       {/* Canvas Controls Bar */}
       <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center space-x-4">
         {/* Rulers Toggle */}
@@ -451,8 +367,50 @@ export const PolotnoEditor = observer(function PolotnoEditor({
           </select>
         </div>
 
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Save Now Button with Last Saved Tooltip */}
+        <button
+          onClick={handleManualSave}
+          disabled={isSaving}
+          className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-sm"
+          title={lastSaved ? `Last saved: ${lastSaved.toLocaleTimeString()}` : 'Save your design'}
+        >
+          {isSaving ? 'Saving...' : 'Save Now'}
+        </button>
+
+        {/* Animation Playback Controls */}
+        {!isPlaying ? (
+          <button
+            onClick={handlePlay}
+            className="px-3 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm"
+            title="Play animations"
+          >
+            ▶ Play
+          </button>
+        ) : (
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={handlePause}
+              className="px-3 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm"
+              title="Pause"
+            >
+              ⏸ Pause
+            </button>
+            <button
+              onClick={handleStop}
+              className="px-3 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm"
+              title="Stop"
+            >
+              ⏹ Stop
+            </button>
+            <span className="text-xs text-gray-600 ml-2">{currentTime.toFixed(1)}s</span>
+          </div>
+        )}
+
         {/* Info about Magic Resize */}
-        <div className="ml-auto text-xs text-gray-600">
+        <div className="text-xs text-gray-600">
           💡 Tip: Magic Resize is enabled - resize canvas with proportional scaling using
           store.setSize(w, h, true)
         </div>
@@ -465,7 +423,16 @@ export const PolotnoEditor = observer(function PolotnoEditor({
             <SidePanel store={store} sections={sections} defaultSection="templates" />
           </SidePanelWrap>
           <WorkspaceWrap>
-            <Toolbar store={store} downloadButtonEnabled />
+            <CustomToolbar
+              store={store}
+              onExportPNG={handleExportPNG}
+              onExportJPEG={handleExportJPEG}
+              onExportGIF={handleExportGIF}
+              onExportVideo={handleExportVideo}
+              isExporting={isExporting}
+              isExportingVideo={isExportingVideo}
+              videoExportProgress={videoExportProgress}
+            />
             <Workspace store={store} />
             <ZoomButtons store={store} />
             <PagesTimeline store={store} />
