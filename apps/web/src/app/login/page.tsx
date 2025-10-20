@@ -29,11 +29,7 @@ export default function LoginPage() {
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight text-gray-900">Media Builder</h2>
           <p className="mt-4 text-sm text-gray-600">
-            {error ? (
-              <span className="text-red-600">{error}</span>
-            ) : (
-              <span>Logging in...</span>
-            )}
+            {error ? <span className="text-red-600">{error}</span> : <span>Logging in...</span>}
           </p>
         </div>
       </div>

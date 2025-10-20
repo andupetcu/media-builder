@@ -2,13 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { ProtectedRoute } from '@/components/protected-route'
-import { useAuthStore } from '@/stores/auth-store'
 import { useTeamStore } from '@/stores/team-store'
 import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api-client'
 
 export default function DashboardPage() {
-  const { user, logout } = useAuthStore()
   const { currentTeamId, initialize: initializeTeams } = useTeamStore()
   const router = useRouter()
   const [isCreating, setIsCreating] = useState(false)
@@ -16,11 +14,6 @@ export default function DashboardPage() {
   useEffect(() => {
     initializeTeams()
   }, [initializeTeams])
-
-  const handleLogout = async () => {
-    await logout()
-    router.push('/login')
-  }
 
   const createDesign = async () => {
     if (!currentTeamId) {

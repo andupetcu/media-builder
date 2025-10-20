@@ -20,7 +20,7 @@ export async function getQR(text: string) {
           light: '#fff',
         },
       },
-      (err, string) => {
+      (_err, string) => {
         resolve(svg.svgToURL(string))
       }
     )

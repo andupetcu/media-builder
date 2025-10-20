@@ -84,11 +84,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   fetchUser: async () => {
-    try {
-      const { data } = await apiClient.get('/users/me')
-      set({ user: data, isAuthenticated: true })
-    } catch (error) {
-      throw error
-    }
+    const { data } = await apiClient.get('/users/me')
+    set({ user: data, isAuthenticated: true })
   },
 }))

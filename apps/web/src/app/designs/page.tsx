@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ProtectedRoute } from '@/components/protected-route'
-import { useAuthStore } from '@/stores/auth-store'
 import { useTeamStore } from '@/stores/team-store'
 import { apiClient } from '@/lib/api-client'
 
@@ -66,13 +65,7 @@ function ConfirmDialog({
 
 export default function DesignsPage() {
   const router = useRouter()
-  const { user, logout } = useAuthStore()
-  const {
-    currentTeamId,
-    teams,
-    initialize: initializeTeams,
-    isLoading: teamsLoading,
-  } = useTeamStore()
+  const { currentTeamId, initialize: initializeTeams, isLoading: teamsLoading } = useTeamStore()
 
   const [designs, setDesigns] = useState<Design[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -108,11 +101,6 @@ export default function DesignsPage() {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const handleLogout = async () => {
-    await logout()
-    router.push('/login')
   }
 
   const createDesign = async () => {

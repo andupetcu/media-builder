@@ -181,7 +181,8 @@ const TeamUploadPanel = observer(({ store }: { store: any }) => {
         </Callout>
       ) : (
         <Callout intent="none" style={{ marginBottom: 10, fontSize: '0.9em' }}>
-          Upload images to your team library. They'll be accessible from the "Team Images" panel.
+          Upload images to your team library. They&apos;ll be accessible from the &quot;Team
+          Images&quot; panel.
         </Callout>
       )}
 

@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { ProtectedRoute } from '@/components/protected-route'
-import { useAuthStore } from '@/stores/auth-store'
 import { useTeamStore } from '@/stores/team-store'
 import { apiClient } from '@/lib/api-client'
 
@@ -39,7 +38,6 @@ export default function EditorPage() {
   const params = useParams()
   const designId = params.id as string
 
-  const { user, logout } = useAuthStore()
   const { currentTeamId, initialize: initializeTeams } = useTeamStore()
 
   const [design, setDesign] = useState<Design | null>(null)
@@ -140,11 +138,6 @@ export default function EditorPage() {
     setEditedName('')
   }
 
-  const handleLogout = async () => {
-    await logout()
-    router.push('/login')
-  }
-
   if (error) {
     return (
       <ProtectedRoute>
@@ -200,8 +193,6 @@ export default function EditorPage() {
             onDashboard={() => router.push('/dashboard')}
             onDesigns={() => router.push('/designs')}
             onAssets={() => router.push('/assets')}
-            onLogout={handleLogout}
-            userName={user?.name}
           />
         </div>
       </div>

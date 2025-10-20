@@ -184,7 +184,9 @@ export const TeamAssetsPanel = observer(({ store }: { store: any }) => {
     <div style={{ height: '100%', overflow: 'auto', padding: '10px' }}>
       {/* Selection Controls */}
       <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '12px' }}>
+        <label
+          style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '12px' }}
+        >
           <input
             type="checkbox"
             checked={selectedAssets.size === assets.length && assets.length > 0}
@@ -239,7 +241,7 @@ export const TeamAssetsPanel = observer(({ store }: { store: any }) => {
               <input
                 type="checkbox"
                 checked={selectedAssets.has(asset.id)}
-                onChange={e => toggleSelectAsset(asset.id, e)}
+                onChange={e => toggleSelectAsset(asset.id, e as any)}
                 onClick={e => e.stopPropagation()}
                 style={{
                   width: '16px',

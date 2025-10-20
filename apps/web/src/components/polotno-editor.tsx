@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { observer } from 'mobx-react-lite'
 import { PolotnoContainer, SidePanelWrap, WorkspaceWrap } from 'polotno'
-import { Toolbar } from 'polotno/toolbar/toolbar'
 import { ZoomButtons } from 'polotno/toolbar/zoom-buttons'
 import { SidePanel, DEFAULT_SECTIONS } from 'polotno/side-panel'
 import { Workspace } from 'polotno/canvas/workspace'
@@ -66,8 +65,6 @@ interface PolotnoEditorProps {
   onDashboard?: () => void
   onDesigns?: () => void
   onAssets?: () => void
-  onLogout?: () => void
-  userName?: string
 }
 
 // Wrap with observer for reactive state
@@ -89,8 +86,6 @@ export const PolotnoEditor = observer(function PolotnoEditor({
   onDashboard,
   onDesigns,
   onAssets,
-  onLogout,
-  userName,
 }: PolotnoEditorProps) {
   const [store] = useState(() => {
     const s = createStore({
@@ -107,7 +102,7 @@ export const PolotnoEditor = observer(function PolotnoEditor({
     return s
   })
 
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [isExporting, setIsExporting] = useState(false)
@@ -349,7 +344,7 @@ export const PolotnoEditor = observer(function PolotnoEditor({
     layersSection,
     sizeSection,
     BatchCreateSection, // Add batch create at the end
-  ].filter(Boolean)
+  ].filter(Boolean) as any[]
 
   return (
     <div className="flex flex-col h-full">

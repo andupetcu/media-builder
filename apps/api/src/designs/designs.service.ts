@@ -218,4 +218,89 @@ export class DesignsService {
     this.logger.log(`Restored design ${design.id} to version ${version.id}`)
     return updated
   }
+
+  /**
+   * Export design as JSON template
+   */
+  async exportAsTemplate(designId: string, teamId: string) {
+    const design = await this.findById(designId, teamId)
+
+    // Create a clean template JSON structure
+    const template = {
+      name: design.name,
+      description: `Template created from design: ${design.name}`,
+      width: design.width,
+      height: design.height,
+      unit: design.unit,
+      doc: design.doc,
+      metadata: {
+        originalDesignId: design.id,
+        createdAt: design.createdAt,
+        updatedAt: design.updatedAt,
+        createdBy: design.createdByUser.name,
+        version: '1.0.0',
+        tags: [],
+      },
+    }
+
+    this.logger.log(`Exported design ${design.id} as template`)
+    return template
+  }
+
+  /**
+   * Export multiple designs as templates
+   */
+  async exportMultipleAsTemplates(teamId: string, designIds?: string[]) {
+    const whereClause: any = { teamId }
+
+    if (designIds && designIds.length > 0) {
+      whereClause.id = { in: designIds }
+    }
+
+    const designs = await this.prisma.design.findMany({
+      where: whereClause,
+      include: {
+        createdByUser: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    })
+
+    const templates = designs.map(design => ({
+      name: design.name,
+      description: `Template created from design: ${design.name}`,
+      width: design.width,
+      height: design.height,
+      unit: design.unit,
+      doc: design.doc,
+      metadata: {
+        originalDesignId: design.id,
+        createdAt: design.createdAt,
+        updatedAt: design.updatedAt,
+        createdBy: design.createdByUser.name,
+        version: '1.0.0',
+        tags: [],
+      },
+    }))
+
+    this.logger.log(`Exported ${templates.length} designs as templates for team ${teamId}`)
+    return {
+      templates,
+      count: templates.length,
+      exportedAt: new Date().toISOString(),
+    }
+  }
+
+  /**
+   * Get design JSON only (for API usage)
+   */
+  async getDesignJson(designId: string, teamId: string) {
+    const design = await this.findById(designId, teamId)
+    return design.doc
+  }
 }

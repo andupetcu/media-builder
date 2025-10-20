@@ -534,7 +534,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
           >
             <p style={{ margin: '0 0 10px 0' }}>No variables defined yet.</p>
             <p style={{ margin: 0, fontSize: '12px' }}>
-              Click "Add Variable" or "Auto-Detect" to get started.
+              Click &quot;Add Variable&quot; or &quot;Auto-Detect&quot; to get started.
             </p>
           </div>
         ) : (
@@ -678,7 +678,9 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
         <p style={{ margin: '0 0 5px 0' }}>
           💡 <strong>Tip:</strong> Use variables in text with {'{variableName}'} syntax.
         </p>
-        <p style={{ margin: 0 }}>Select a text element and click "Insert" to add a variable.</p>
+        <p style={{ margin: 0 }}>
+          Select a text element and click &quot;Insert&quot; to add a variable.
+        </p>
       </div>
     </div>
   )

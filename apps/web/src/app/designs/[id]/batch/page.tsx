@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api-client'
 import { useTeamStore } from '@/stores/team-store'
@@ -10,7 +10,7 @@ import {
   formatFileSize,
   type ParsedData,
 } from '@/lib/csv-parser'
-import { extractVariablesFromDesign, type DesignVariable } from '@/lib/variable-utils'
+import { type DesignVariable } from '@/lib/variable-utils'
 
 export default function BatchGenerationPage() {
   const params = useParams()
@@ -185,8 +185,8 @@ export default function BatchGenerationPage() {
                 <h3 className="text-sm font-medium text-yellow-800">No Variables Defined</h3>
                 <div className="mt-2 text-sm text-yellow-700">
                   <p>
-                    This design doesn't have any variables defined. You need to add variables before
-                    you can generate batch variations.
+                    This design doesn&apos;t have any variables defined. You need to add variables
+                    before you can generate batch variations.
                   </p>
                   <button
                     onClick={() => router.push(`/editor/${designId}`)}

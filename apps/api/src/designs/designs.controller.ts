@@ -85,4 +85,25 @@ export class DesignsController {
   ) {
     return this.designsService.restoreVersion(id, versionId, teamId)
   }
+
+  @Get(':id/export/template')
+  @ApiOperation({ summary: 'Export design as JSON template' })
+  async exportAsTemplate(@Param('teamId') teamId: string, @Param('id') id: string) {
+    return this.designsService.exportAsTemplate(id, teamId)
+  }
+
+  @Get(':id/export/json')
+  @ApiOperation({ summary: 'Get design JSON data only' })
+  async getDesignJson(@Param('teamId') teamId: string, @Param('id') id: string) {
+    return this.designsService.getDesignJson(id, teamId)
+  }
+
+  @Post('export/templates')
+  @ApiOperation({ summary: 'Export multiple designs as templates' })
+  async exportMultipleAsTemplates(
+    @Param('teamId') teamId: string,
+    @Body() dto: { designIds?: string[] }
+  ) {
+    return this.designsService.exportMultipleAsTemplates(teamId, dto.designIds)
+  }
 }
