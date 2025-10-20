@@ -9,6 +9,7 @@ import { OrgsModule } from './orgs/orgs.module'
 import { TeamsModule } from './teams/teams.module'
 import { DesignsModule } from './designs/designs.module'
 import { AssetsModule } from './assets/assets.module'
+import { TemplatesModule } from './templates/templates.module'
 import { BulkModule } from './bulk/bulk.module'
 import { HealthModule } from './health/health.module'
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard'
@@ -33,6 +34,7 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware'
     TeamsModule,
     DesignsModule,
     AssetsModule,
+    TemplatesModule,
     BulkModule,
     HealthModule,
   ],

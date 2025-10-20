@@ -36,6 +36,7 @@ model User {
   designs       Design[]
   comments      Comment[]
   assets        Asset[]
+  templates     Template[]
 
   @@map("users")
 }
@@ -110,6 +111,7 @@ model Team {
   designs   Design[]
   assets    Asset[]
   brandKits BrandKit[]
+  templates Template[]
 
   @@unique([orgId, slug])
   @@index([orgId])
@@ -192,6 +194,33 @@ model Asset {
   @@index([tags], type: Gin)
   @@index([meta], type: Gin)
   @@map("assets")
+}
+
+// ===========================
+// Templates
+// ===========================
+
+model Template {
+  id          String   @id @default(cuid())
+  teamId      String   @map("team_id")
+  createdBy   String   @map("created_by")
+  name        String
+  description String?
+  doc         Json     @default("{}") // Polotno store JSON
+  thumbnail   String?
+  width       Int
+  height      Int
+  tags        String[] @default([])
+  isPublic    Boolean  @default(false) @map("is_public") // Share with other teams
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  team          Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdByUser User @relation(fields: [createdBy], references: [id])
+
+  @@index([teamId, createdAt])
+  @@index([tags], type: Gin)
+  @@map("templates")
 }
 
 // ===========================

@@ -6,9 +6,14 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter'
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor'
 import { NestExpressApplication } from '@nestjs/platform-express'
 import * as path from 'path'
+import { json, urlencoded } from 'express'
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule)
+
+  // Increase body size limit to handle large payloads (e.g., base64 thumbnails)
+  app.use(json({ limit: '50mb' }))
+  app.use(urlencoded({ limit: '50mb', extended: true }))
 
   // Serve static assets since Nginx Proxy Manager is on a different server
   const assetsRoot = process.env.ASSETS_ROOT || '/data/assets'

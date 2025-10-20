@@ -13,6 +13,7 @@ import { storeToVideo } from '@polotno/video-export'
 import { QrSection } from './polotno/qr-code-panel'
 import { UnsplashSection } from './polotno/unsplash-panel'
 import { TeamAssetsSection } from './polotno/team-assets-panel'
+import { TeamTemplatesSection } from './polotno/team-templates-panel'
 import { BatchCreateSection } from './polotno/batch-create-panel'
 import { CustomToolbar } from './polotno/custom-toolbar'
 import { apiClient } from '@/lib/api-client'
@@ -197,6 +198,49 @@ export const PolotnoEditor = observer(function PolotnoEditor({
     }
   }
 
+  // Save as Template
+  const handleSaveAsTemplate = async () => {
+    const templateName = prompt('Enter a name for this template:')
+    if (!templateName) return
+
+    const teamId = useTeamStore.getState().currentTeamId
+    if (!teamId) {
+      alert('No team selected')
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      // Wait for all resources to load
+      await store.waitLoading()
+
+      // Generate thumbnail
+      const thumbnailDataUrl = await store.toDataURL({
+        pixelRatio: 0.5,
+        mimeType: 'image/jpeg',
+        quality: 0.8,
+      })
+
+      const json = store.toJSON()
+
+      // Create template
+      await apiClient.post(`/teams/${teamId}/templates`, {
+        name: templateName,
+        doc: json,
+        thumbnail: thumbnailDataUrl,
+        width: store.width,
+        height: store.height,
+      })
+
+      alert('Template saved successfully!')
+    } catch (error) {
+      console.error('Save template failed:', error)
+      alert('Failed to save template')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   // Export as PNG with high quality
   const handleExportPNG = async () => {
     setIsExporting(true)
@@ -332,6 +376,7 @@ export const PolotnoEditor = observer(function PolotnoEditor({
   // Build sections array in the requested order, filtering out any undefined sections
   const sections = [
     templatesSection,
+    TeamTemplatesSection, // Custom team templates
     TeamAssetsSection,
     elementsSection,
     textSection,
@@ -567,6 +612,24 @@ export const PolotnoEditor = observer(function PolotnoEditor({
           title={lastSaved ? `Last saved: ${lastSaved.toLocaleTimeString()}` : 'Save your design'}
         >
           {isSaving ? 'Saving...' : 'Save Now'}
+        </button>
+
+        {/* Save as Template Button */}
+        <button
+          onClick={handleSaveAsTemplate}
+          disabled={isSaving}
+          className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed text-sm flex items-center gap-1"
+          title="Save current design as a reusable template"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+            />
+          </svg>
+          Save as Template
         </button>
 
         {/* Animation Playback Controls */}
