@@ -3,9 +3,12 @@
 import React, { useState, useEffect } from 'react'
 import { observer } from 'mobx-react-lite'
 import { SectionTab } from 'polotno/side-panel'
-import { InputGroup, Card } from '@blueprintjs/core'
+import { InputGroup } from '@blueprintjs/core'
+import { ImagesGrid } from 'polotno/side-panel/images-grid'
 import { apiClient } from '@/lib/api-client'
 import { useTeamStore } from '@/stores/team-store'
+import { nanoid } from 'nanoid'
+import { forEveryChild } from 'polotno/model/group-model'
 
 // Icon for the templates section
 const MyTemplatesIcon = ({ size = 24 }) => (
@@ -61,29 +64,32 @@ const TeamTemplatesPanel = observer(({ store }: { store: any }) => {
         templateJson = data
       }
 
-      // Add pages from template to existing design
-      if (templateJson && templateJson.pages) {
-        templateJson.pages.forEach((page: any) => {
-          const newPage = store.addPage()
-          // Copy all page properties
-          Object.keys(page).forEach(key => {
-            if (key !== 'id' && key !== 'children') {
-              newPage.set({ [key]: page[key] })
-            }
+      // Apply template using the same logic as Polotno's default templates
+      if (store.pages.length <= 1) {
+        // If only one page or empty, replace everything
+        store.loadJSON(templateJson, true)
+      } else {
+        // Otherwise, insert template pages at current position
+        const currentStoreJSON = JSON.parse(JSON.stringify(store.toJSON()))
+
+        // Ensure size compatibility
+        if (currentStoreJSON.width !== templateJson.width || currentStoreJSON.height !== templateJson.height) {
+          templateJson.pages.forEach((page: any) => {
+            page.width = page.width || templateJson.width
+            page.height = page.height || templateJson.height
           })
-          // Copy all elements/children
-          if (page.children) {
-            page.children.forEach((child: any) => {
-              newPage.addElement(child)
-            })
-          }
+        }
+
+        // Generate new IDs for all elements
+        forEveryChild({ children: templateJson.pages }, (child: any) => {
+          child.id = nanoid(10)
         })
 
-        // Select the first new page
-        if (templateJson.pages.length > 0) {
-          const lastPageIndex = store.pages.length - templateJson.pages.length
-          store.selectPage(store.pages[lastPageIndex].id)
-        }
+        // Insert template pages at current position
+        const activePageIndex = store.pages.indexOf(store.activePage)
+        currentStoreJSON.pages.splice(activePageIndex, 1, ...templateJson.pages)
+
+        store.loadJSON(currentStoreJSON, true)
       }
     } catch (error) {
       console.error('Failed to apply template:', error)
@@ -92,70 +98,23 @@ const TeamTemplatesPanel = observer(({ store }: { store: any }) => {
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-4 pb-2">
-        <InputGroup
-          leftIcon="search"
-          placeholder="Search my templates..."
-          value={searchQuery}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-        />
-      </div>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <InputGroup
+        leftIcon="search"
+        placeholder="Search my templates..."
+        type="search"
+        value={searchQuery}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+        style={{ marginBottom: '20px' }}
+      />
 
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
-        {loading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-sm text-gray-600 mt-2">Loading templates...</p>
-          </div>
-        ) : templates.length === 0 ? (
-          <div className="text-center py-8">
-            <MyTemplatesIcon size={48} />
-            <p className="text-sm text-gray-600 mt-4 font-semibold">No templates yet</p>
-            <p className="text-xs text-gray-500 mt-2 px-4">
-              Save your first template using the "Save as Template" button in the editor toolbar
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {templates.map(template => (
-              <Card
-                key={template.id}
-                interactive
-                elevation={1}
-                className="cursor-pointer hover:shadow-lg transition-shadow p-0 overflow-hidden"
-                onClick={() => applyTemplate(template)}
-              >
-                {template.thumbnail ? (
-                  <img
-                    src={template.thumbnail}
-                    alt={template.name}
-                    className="w-full h-32 object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-32 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                    <MyTemplatesIcon size={32} />
-                  </div>
-                )}
-                <div className="p-3">
-                  <h4 className="text-sm font-semibold truncate">{template.name}</h4>
-                  {template.description && (
-                    <p className="text-xs text-gray-600 line-clamp-2 mt-1">{template.description}</p>
-                  )}
-                  <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-                    <span>
-                      {template.width} × {template.height}px
-                    </span>
-                    {template.tags && template.tags.length > 0 && (
-                      <span className="truncate ml-2">#{template.tags[0]}</span>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
+      <ImagesGrid
+        images={templates}
+        getPreview={(template: any) => template.thumbnail || ''}
+        isLoading={loading}
+        onSelect={applyTemplate}
+        shadowEnabled={true}
+      />
     </div>
   )
 })
