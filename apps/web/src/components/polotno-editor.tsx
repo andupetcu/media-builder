@@ -16,6 +16,7 @@ import { TeamAssetsSection } from './polotno/team-assets-panel'
 import { TeamTemplatesSection } from './polotno/team-templates-panel'
 import { BatchCreateSection } from './polotno/batch-create-panel'
 import { CustomToolbar } from './polotno/custom-toolbar'
+import { SaveTemplateDialog } from './polotno/save-template-dialog'
 import { apiClient } from '@/lib/api-client'
 import { useTeamStore } from '@/stores/team-store'
 import '@blueprintjs/core/lib/css/blueprint.css'
@@ -112,6 +113,7 @@ export const PolotnoEditor = observer(function PolotnoEditor({
   const [videoExportProgress, setVideoExportProgress] = useState(0)
   const [isExportingVideo, setIsExportingVideo] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isSaveTemplateDialogOpen, setIsSaveTemplateDialogOpen] = useState(false)
 
   useEffect(() => {
     // Load initial document if provided
@@ -198,11 +200,13 @@ export const PolotnoEditor = observer(function PolotnoEditor({
     }
   }
 
-  // Save as Template
-  const handleSaveAsTemplate = async () => {
-    const templateName = prompt('Enter a name for this template:')
-    if (!templateName) return
+  // Save as Template - opens dialog
+  const handleSaveAsTemplate = () => {
+    setIsSaveTemplateDialogOpen(true)
+  }
 
+  // Handle actual template save/update
+  const handleTemplateDialogSave = async (templateId?: string, name?: string) => {
     const teamId = useTeamStore.getState().currentTeamId
     if (!teamId) {
       alert('No team selected')
@@ -223,16 +227,28 @@ export const PolotnoEditor = observer(function PolotnoEditor({
 
       const json = store.toJSON()
 
-      // Create template
-      await apiClient.post(`/teams/${teamId}/templates`, {
-        name: templateName,
-        doc: json,
-        thumbnail: thumbnailDataUrl,
-        width: store.width,
-        height: store.height,
-      })
+      if (templateId) {
+        // Update existing template
+        await apiClient.patch(`/teams/${teamId}/templates/${templateId}`, {
+          doc: json,
+          thumbnail: thumbnailDataUrl,
+          width: store.width,
+          height: store.height,
+        })
+        alert('Template updated successfully!')
+      } else {
+        // Create new template
+        await apiClient.post(`/teams/${teamId}/templates`, {
+          name: name,
+          doc: json,
+          thumbnail: thumbnailDataUrl,
+          width: store.width,
+          height: store.height,
+        })
+        alert('Template saved successfully!')
+      }
 
-      alert('Template saved successfully!')
+      setIsSaveTemplateDialogOpen(false)
     } catch (error) {
       console.error('Save template failed:', error)
       alert('Failed to save template')
@@ -685,6 +701,13 @@ export const PolotnoEditor = observer(function PolotnoEditor({
           </WorkspaceWrap>
         </PolotnoContainer>
       </div>
+
+      <SaveTemplateDialog
+        isOpen={isSaveTemplateDialogOpen}
+        onClose={() => setIsSaveTemplateDialogOpen(false)}
+        onSave={handleTemplateDialogSave}
+        isSaving={isSaving}
+      />
     </div>
   )
 })
