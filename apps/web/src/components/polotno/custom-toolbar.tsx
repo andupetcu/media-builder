@@ -3,7 +3,7 @@
 import React from 'react'
 import { observer } from 'mobx-react-lite'
 import { Toolbar } from 'polotno/toolbar/toolbar'
-// Removed Blueprint.js dependency - using simple dropdown instead
+import { Button, Menu, MenuItem, Popover, Position } from '@blueprintjs/core'
 
 interface CustomToolbarProps {
   store: any
@@ -16,6 +16,20 @@ interface CustomToolbarProps {
   videoExportProgress: number
 }
 
+// Download icon SVG component
+const DownloadIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="currentColor"
+    style={{ marginRight: '4px' }}
+  >
+    <path d="M8.5 11.5a.5.5 0 0 1-1 0V6.707L6.354 7.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 6.707V11.5z" />
+    <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z" />
+  </svg>
+)
+
 export const CustomToolbar = observer(
   ({
     store,
@@ -27,126 +41,62 @@ export const CustomToolbar = observer(
     isExportingVideo,
     videoExportProgress,
   }: CustomToolbarProps) => {
-    const [showMenu, setShowMenu] = React.useState(false)
+    // Define ActionControls component to be injected into the toolbar
+    const ActionControls = observer(() => {
+      const menuContent = (
+        <Menu>
+          <MenuItem
+            text={isExporting ? 'Exporting...' : 'Export PNG'}
+            icon="media"
+            onClick={() => onExportPNG()}
+            disabled={isExporting || isExportingVideo}
+          />
+          <MenuItem
+            text={isExporting ? 'Exporting...' : 'Export JPEG'}
+            icon="media"
+            onClick={() => onExportJPEG()}
+            disabled={isExporting || isExportingVideo}
+          />
+          <MenuItem
+            text={isExporting ? 'Exporting...' : 'Export GIF'}
+            icon="film"
+            onClick={() => onExportGIF()}
+            disabled={isExporting || isExportingVideo}
+          />
+          <MenuItem
+            text={
+              isExportingVideo ? `Exporting Video ${videoExportProgress}%` : 'Export Video (MP4)'
+            }
+            icon="video"
+            onClick={() => onExportVideo()}
+            disabled={isExporting || isExportingVideo}
+          />
+        </Menu>
+      )
+
+      return (
+        <Popover content={menuContent} position={Position.BOTTOM_RIGHT}>
+          <Button
+            icon={<DownloadIcon />}
+            intent="primary"
+            disabled={isExporting || isExportingVideo}
+            minimal={false}
+          >
+            {isExporting || isExportingVideo ? 'Exporting...' : ''}
+          </Button>
+        </Popover>
+      )
+    })
 
     return (
-      <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-        {/* Default Polotno Toolbar */}
-        <Toolbar store={store} downloadButtonEnabled={false} />
-
-        {/* Custom Download Menu */}
-        <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            disabled={isExporting || isExportingVideo}
-            style={{
-              padding: '8px 16px',
-              background: isExporting || isExportingVideo ? '#ccc' : '#2196F3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: isExporting || isExportingVideo ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            {isExporting || isExportingVideo ? 'Exporting...' : 'Download ▼'}
-          </button>
-
-          {showMenu && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '100%',
-                right: 0,
-                marginTop: '4px',
-                background: 'white',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                zIndex: 1000,
-                minWidth: '200px',
-              }}
-            >
-              <button
-                onClick={() => {
-                  onExportPNG()
-                  setShowMenu(false)
-                }}
-                disabled={isExporting || isExportingVideo}
-                style={{
-                  width: '100%',
-                  padding: '10px 16px',
-                  background: 'transparent',
-                  border: 'none',
-                  textAlign: 'left',
-                  cursor: isExporting || isExportingVideo ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
-                }}
-              >
-                {isExporting ? 'Exporting...' : 'Export PNG'}
-              </button>
-              <button
-                onClick={() => {
-                  onExportJPEG()
-                  setShowMenu(false)
-                }}
-                disabled={isExporting || isExportingVideo}
-                style={{
-                  width: '100%',
-                  padding: '10px 16px',
-                  background: 'transparent',
-                  border: 'none',
-                  textAlign: 'left',
-                  cursor: isExporting || isExportingVideo ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
-                }}
-              >
-                {isExporting ? 'Exporting...' : 'Export JPEG'}
-              </button>
-              <button
-                onClick={() => {
-                  onExportGIF()
-                  setShowMenu(false)
-                }}
-                disabled={isExporting || isExportingVideo}
-                style={{
-                  width: '100%',
-                  padding: '10px 16px',
-                  background: 'transparent',
-                  border: 'none',
-                  textAlign: 'left',
-                  cursor: isExporting || isExportingVideo ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
-                }}
-              >
-                {isExporting ? 'Exporting...' : 'Export GIF'}
-              </button>
-              <button
-                onClick={() => {
-                  onExportVideo()
-                  setShowMenu(false)
-                }}
-                disabled={isExporting || isExportingVideo}
-                style={{
-                  width: '100%',
-                  padding: '10px 16px',
-                  background: 'transparent',
-                  border: 'none',
-                  textAlign: 'left',
-                  cursor: isExporting || isExportingVideo ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
-                }}
-              >
-                {isExportingVideo
-                  ? `Exporting Video ${videoExportProgress}%`
-                  : 'Export Video (MP4)'}
-              </button>
-            </div>
-          )}
-        </div>
+      <div style={{ paddingRight: '10px' }}>
+        <Toolbar
+          store={store}
+          downloadButtonEnabled={false}
+          components={{
+            ActionControls,
+          }}
+        />
       </div>
     )
   }

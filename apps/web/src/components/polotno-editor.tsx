@@ -349,7 +349,7 @@ export const PolotnoEditor = observer(function PolotnoEditor({
   return (
     <div className="flex flex-col h-full">
       {/* Canvas Controls Bar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center space-x-4">
+      <div className="bg-white border-b border-gray-200 px-4 py-2 pr-[10px] flex items-center space-x-4">
         {/* Menu Dropdown */}
         <div className="relative">
           <button
