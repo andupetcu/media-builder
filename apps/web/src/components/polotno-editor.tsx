@@ -375,8 +375,8 @@ export const PolotnoEditor = observer(function PolotnoEditor({
 
   // Build sections array in the requested order, filtering out any undefined sections
   const sections = [
+    TeamTemplatesSection, // Custom team templates - first!
     templatesSection,
-    TeamTemplatesSection, // Custom team templates
     TeamAssetsSection,
     elementsSection,
     textSection,
@@ -666,7 +666,7 @@ export const PolotnoEditor = observer(function PolotnoEditor({
       <div className="flex-1 overflow-hidden">
         <PolotnoContainer className="h-full">
           <SidePanelWrap>
-            <SidePanel store={store} sections={sections} defaultSection="templates" />
+            <SidePanel store={store} sections={sections} defaultSection="team-templates" />
           </SidePanelWrap>
           <WorkspaceWrap>
             <CustomToolbar

@@ -165,7 +165,9 @@ export const TeamTemplatesSection = {
   name: 'team-templates',
   Tab: (props: any) => (
     <SectionTab name="My Templates" {...props}>
-      <MyTemplatesIcon />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <MyTemplatesIcon size={20} />
+      </div>
     </SectionTab>
   ),
   Panel: TeamTemplatesPanel,
