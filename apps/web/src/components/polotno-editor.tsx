@@ -17,6 +17,7 @@ import { TeamTemplatesSection } from './polotno/team-templates-panel'
 import { BatchCreateSection } from './polotno/batch-create-panel'
 import { CustomToolbar } from './polotno/custom-toolbar'
 import { SaveTemplateDialog } from './polotno/save-template-dialog'
+import { ImportTemplateDialog } from './polotno/import-template-dialog'
 import { apiClient } from '@/lib/api-client'
 import { useTeamStore } from '@/stores/team-store'
 import '@blueprintjs/core/lib/css/blueprint.css'
@@ -114,6 +115,7 @@ export const PolotnoEditor = observer(function PolotnoEditor({
   const [isExportingVideo, setIsExportingVideo] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSaveTemplateDialogOpen, setIsSaveTemplateDialogOpen] = useState(false)
+  const [isImportTemplateDialogOpen, setIsImportTemplateDialogOpen] = useState(false)
 
   useEffect(() => {
     // Load initial document if provided
@@ -254,6 +256,15 @@ export const PolotnoEditor = observer(function PolotnoEditor({
       alert('Failed to save template')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  // Handle import template completion
+  const handleImportComplete = (template: any) => {
+    // Load the imported template into the editor
+    if (template.doc) {
+      store.loadJSON(template.doc)
+      alert(`Template "${template.name}" loaded into editor!`)
     }
   }
 
@@ -648,6 +659,23 @@ export const PolotnoEditor = observer(function PolotnoEditor({
           Save as Template
         </button>
 
+        {/* Import Template Button */}
+        <button
+          onClick={() => setIsImportTemplateDialogOpen(true)}
+          className="px-3 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm flex items-center gap-1"
+          title="Import a PSD file as a template"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+            />
+          </svg>
+          Import Template
+        </button>
+
         {/* Animation Playback Controls */}
         {!isPlaying ? (
           <button
@@ -707,6 +735,12 @@ export const PolotnoEditor = observer(function PolotnoEditor({
         onClose={() => setIsSaveTemplateDialogOpen(false)}
         onSave={handleTemplateDialogSave}
         isSaving={isSaving}
+      />
+
+      <ImportTemplateDialog
+        isOpen={isImportTemplateDialogOpen}
+        onClose={() => setIsImportTemplateDialogOpen(false)}
+        onImportComplete={handleImportComplete}
       />
     </div>
   )
