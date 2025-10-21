@@ -195,32 +195,51 @@ export class PsdConverterService {
         const layerPath = join(outputDir, `layer_${i}.png`)
 
         try {
+          // Get layer geometry with position offset from ImageMagick
+          const { stdout: geometryOutput } = await execAsync(
+            `identify -format "%g" "${psdPath}[${i}]"`
+          )
+
+          // Parse geometry string: WIDTHxHEIGHT+X+Y or WIDTHxHEIGHT-X+Y
+          // Example: 4209x4405-708+333 means width=4209, height=4405, x=-708, y=333
+          const geometryMatch = geometryOutput.trim().match(/(\d+)x(\d+)([-+]\d+)([-+]\d+)/)
+
+          if (!geometryMatch) {
+            this.logger.warn(`Could not parse geometry for layer ${i}: ${geometryOutput}`)
+            continue
+          }
+
+          const layerWidth = parseInt(geometryMatch[1])
+          const layerHeight = parseInt(geometryMatch[2])
+          const offsetX = parseInt(geometryMatch[3])
+          const offsetY = parseInt(geometryMatch[4])
+
           // Extract layer with alpha transparency
           // Using ImageMagick 6 syntax: convert instead of magick
           await execAsync(`convert "${psdPath}[${i}]" -background none -alpha on "${layerPath}"`)
 
-          // Get layer dimensions and check if it's not empty
+          // Verify extraction succeeded
           const metadata = await sharp(layerPath).metadata()
-
           if (!metadata.width || !metadata.height) {
             this.logger.warn(`Layer ${i} has no dimensions, skipping`)
             continue
           }
 
-          // For ImageMagick 6, we get position from the layer itself
-          // Since ImageMagick doesn't preserve exact layer positions in the same way,
-          // we'll use 0,0 and rely on the visual stacking order
           layers.push({
             id: `layer-${randomUUID().substring(0, 8)}`,
             name: `Layer ${i}`,
-            x: 0,
-            y: 0,
-            width: metadata.width,
-            height: metadata.height,
+            x: offsetX,
+            y: offsetY,
+            width: layerWidth,
+            height: layerHeight,
             opacity: 1,
             visible: true,
             imagePath: layerPath,
           })
+
+          this.logger.log(
+            `Extracted layer ${i}: ${layerWidth}x${layerHeight} at (${offsetX}, ${offsetY})`
+          )
         } catch (error: any) {
           this.logger.warn(`Failed to extract layer ${i}: ${error.message}`)
           // If we hit an invalid layer index, stop extraction
@@ -233,8 +252,11 @@ export class PsdConverterService {
         }
       }
 
-      // Reverse to match Photoshop layer order (top to bottom)
-      return layers.reverse()
+      // Return layers in original order from PSD
+      // In Polotno, children[0] is bottom, children[last] is top
+      // ImageMagick extracts layers in bottom-to-top order (0=bottom, N=top)
+      // So we keep the natural order without reversing
+      return layers
     } catch (error: any) {
       this.logger.error(`Layer extraction failed: ${error.message}`)
       throw error
