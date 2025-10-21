@@ -164,10 +164,11 @@ export class PsdConverterService {
       this.logger.error(`PSD conversion failed: ${error.message}`, error.stack)
       throw new BadRequestException(`Failed to convert PSD: ${error.message}`)
     } finally {
-      // Clean up temp directory
+      // Clean up temp directory (extracted layers, composite, etc.)
       await rm(workDir, { recursive: true, force: true }).catch(err => {
         this.logger.warn(`Failed to clean up temp directory: ${err.message}`)
       })
+      this.logger.log(`Cleaned up temp work directory: ${workDir}`)
     }
   }
 
@@ -264,6 +265,77 @@ export class PsdConverterService {
   }
 
   /**
+   * Optimize layer image for web use
+   * Intelligently resizes large images while maintaining aspect ratio
+   */
+  private async optimizeLayerImage(imagePath: string): Promise<Buffer> {
+    const metadata = await sharp(imagePath).metadata()
+    const width = metadata.width || 0
+    const height = metadata.height || 0
+
+    // Define max dimensions based on common canvas sizes
+    const MAX_LANDSCAPE_WIDTH = 1920 // Full HD landscape
+    const MAX_PORTRAIT_WIDTH = 1080 // Full HD portrait
+
+    let needsResize = false
+    let targetWidth: number | undefined
+    let targetHeight: number | undefined
+
+    // Determine if resize is needed and calculate target dimensions
+    if (width >= height) {
+      // Landscape or square
+      if (width > MAX_LANDSCAPE_WIDTH) {
+        needsResize = true
+        targetWidth = MAX_LANDSCAPE_WIDTH
+        // Height will be calculated automatically to maintain aspect ratio
+      }
+    } else {
+      // Portrait
+      if (width > MAX_PORTRAIT_WIDTH) {
+        needsResize = true
+        targetWidth = MAX_PORTRAIT_WIDTH
+      }
+    }
+
+    if (needsResize) {
+      this.logger.log(
+        `Optimizing layer from ${width}x${height} to max width ${targetWidth}px`
+      )
+
+      const optimized = await sharp(imagePath)
+        .resize(targetWidth, targetHeight, {
+          fit: 'inside', // Maintain aspect ratio
+          withoutEnlargement: true, // Don't upscale
+        })
+        .png({
+          compressionLevel: 9, // Maximum PNG compression
+          quality: 90, // High quality
+        })
+        .toBuffer()
+
+      const originalSize = (await readFile(imagePath)).length
+      const optimizedSize = optimized.length
+      const savings = ((1 - optimizedSize / originalSize) * 100).toFixed(1)
+
+      this.logger.log(
+        `Image optimized: ${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(optimizedSize / 1024 / 1024).toFixed(2)}MB (${savings}% savings)`
+      )
+
+      return optimized
+    }
+
+    // No resize needed, but still optimize PNG compression
+    const optimized = await sharp(imagePath)
+      .png({
+        compressionLevel: 9,
+        quality: 90,
+      })
+      .toBuffer()
+
+    return optimized
+  }
+
+  /**
    * Upload extracted layer images as assets
    */
   private async uploadLayerAssets(
@@ -276,12 +348,18 @@ export class PsdConverterService {
 
     for (const layer of layers) {
       try {
-        // Hash the layer image
-        const hash = await this.storage.hashFile(layer.imagePath)
+        // Optimize layer image before upload
+        const optimizedBuffer = await this.optimizeLayerImage(layer.imagePath)
+
+        // Write optimized buffer to temp file for hashing and upload
+        const optimizedPath = `${layer.imagePath}.optimized.png`
+        await writeFile(optimizedPath, optimizedBuffer)
+
+        // Hash the optimized image
+        const hash = await this.storage.hashFile(optimizedPath)
 
         // Get file size
-        const buffer = await readFile(layer.imagePath)
-        const sizeBytes = BigInt(buffer.length)
+        const sizeBytes = BigInt(optimizedBuffer.length)
 
         // Upload as asset
         const asset = await this.assetsService.createAsset(
@@ -293,16 +371,19 @@ export class PsdConverterService {
           'image/png',
           sizeBytes,
           hash,
-          layer.imagePath,
+          optimizedPath,
           ['psd-layer', 'imported']
         )
+
+        // Clean up optimized temp file
+        await rm(optimizedPath).catch(() => {})
 
         uploadedLayers.push({
           ...layer,
           uploadedUrl: asset.publicUrl || undefined,
         })
 
-        this.logger.log(`Uploaded layer ${layer.name} as asset ${asset.id}`)
+        this.logger.log(`Uploaded optimized layer ${layer.name} as asset ${asset.id}`)
       } catch (error: any) {
         this.logger.error(`Failed to upload layer ${layer.name}: ${error.message}`)
         // Continue with other layers even if one fails

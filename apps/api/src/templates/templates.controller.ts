@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  Logger,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { ApiTags, ApiConsumes, ApiBody } from '@nestjs/swagger'
@@ -32,6 +33,8 @@ import { tmpdir } from 'os'
 @Controller('teams/:teamId/templates')
 @UseGuards(TeamMemberGuard)
 export class TemplatesController {
+  private readonly logger = new Logger(TemplatesController.name)
+
   constructor(
     private readonly templatesService: TemplatesService,
     private readonly psdConverter: PsdConverterService,
@@ -105,28 +108,32 @@ export class TemplatesController {
     }
 
     // Read file buffer
-    const { readFile } = await import('fs/promises')
+    const { readFile, unlink } = await import('fs/promises')
     const buffer = await readFile(file.path)
 
-    // Convert PSD to template
-    const template = await this.psdConverter.convertPSDToTemplate(
-      buffer,
-      file.originalname,
-      teamId,
-      user.id,
-      {
-        name: dto.name,
-        description: dto.description,
-        tags: dto.tags,
-        isPublic: dto.isPublic,
-      }
-    )
+    try {
+      // Convert PSD to template
+      const template = await this.psdConverter.convertPSDToTemplate(
+        buffer,
+        file.originalname,
+        teamId,
+        user.id,
+        {
+          name: dto.name,
+          description: dto.description,
+          tags: dto.tags,
+          isPublic: dto.isPublic,
+        }
+      )
 
-    // Clean up temp file
-    const { unlink } = await import('fs/promises')
-    await unlink(file.path).catch(() => {})
-
-    return template
+      return template
+    } finally {
+      // Always clean up uploaded PSD file, even if conversion fails
+      await unlink(file.path).catch(err => {
+        this.logger.warn(`Failed to delete uploaded PSD: ${err.message}`)
+      })
+      this.logger.log(`Cleaned up uploaded PSD file: ${file.originalname}`)
+    }
   }
 
   @Post('import-psd/start')
@@ -218,24 +225,27 @@ export class TemplatesController {
     const { readFile } = await import('fs/promises')
     const buffer = await readFile(filePath)
 
-    // Convert PSD to template
-    const template = await this.psdConverter.convertPSDToTemplate(
-      buffer,
-      filename,
-      teamId,
-      user.id,
-      {
-        name: metadata?.name || dto.name,
-        description: metadata?.description || dto.description,
-        tags: metadata?.tags || (dto.tags ? JSON.parse(dto.tags) : undefined),
-        isPublic: metadata?.isPublic ?? (dto.isPublic ? dto.isPublic === 'true' : undefined),
-      }
-    )
+    try {
+      // Convert PSD to template
+      const template = await this.psdConverter.convertPSDToTemplate(
+        buffer,
+        filename,
+        teamId,
+        user.id,
+        {
+          name: metadata?.name || dto.name,
+          description: metadata?.description || dto.description,
+          tags: metadata?.tags || (dto.tags ? JSON.parse(dto.tags) : undefined),
+          isPublic: metadata?.isPublic ?? (dto.isPublic ? dto.isPublic === 'true' : undefined),
+        }
+      )
 
-    // Clean up upload session
-    await this.chunkedUpload.cleanupUpload(dto.uploadId)
-
-    return template
+      return template
+    } finally {
+      // Always clean up upload session and assembled PSD file
+      await this.chunkedUpload.cleanupUpload(dto.uploadId)
+      this.logger.log(`Cleaned up chunked upload session and PSD file: ${filename}`)
+    }
   }
 
   @Post()
