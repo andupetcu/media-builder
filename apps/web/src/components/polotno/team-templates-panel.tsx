@@ -30,7 +30,10 @@ const TeamTemplatesPanel = observer(({ store }: { store: any }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; templateId: string | null }>({
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean
+    templateId: string | null
+  }>({
     isOpen: false,
     templateId: null,
   })

@@ -14,6 +14,9 @@ import {
   getVariableTypeIcon,
   createVariable,
 } from '@/lib/variable-utils'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ToastContainer } from '@/components/ui/toast'
+import { useToast } from '@/hooks/use-toast'
 
 interface VariablesPanelProps {
   store: any
@@ -32,6 +35,20 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
   const [formSampleValue, setFormSampleValue] = useState('')
   const [formDefaultValue, setFormDefaultValue] = useState('')
   const [formError, setFormError] = useState('')
+
+  // Confirmation dialogs
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; varName: string | null }>({
+    isOpen: false,
+    varName: null,
+  })
+  const [removeImageConfirm, setRemoveImageConfirm] = useState<{
+    isOpen: boolean
+    varName: string | null
+  }>({
+    isOpen: false,
+    varName: null,
+  })
+  const { toasts, removeToast, warning, info } = useToast()
 
   // Load variables from design JSON
   useEffect(() => {
@@ -88,7 +105,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
       const updatedVariables = [...variables, ...newVariables]
       saveVariables(updatedVariables)
     } else {
-      alert('No new variables detected in the design.')
+      info('No new variables detected in the design.')
     }
   }
 
@@ -149,11 +166,22 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
   }
 
   // Handle delete variable
-  const handleDeleteVariable = (varName: string) => {
-    if (confirm(`Are you sure you want to delete variable "${varName}"?`)) {
-      const updatedVariables = variables.filter(v => v.name !== varName)
-      saveVariables(updatedVariables)
-    }
+  const handleDeleteClick = (varName: string) => {
+    setDeleteConfirm({ isOpen: true, varName })
+  }
+
+  const confirmDelete = () => {
+    if (!deleteConfirm.varName) return
+
+    const varName = deleteConfirm.varName
+    setDeleteConfirm({ isOpen: false, varName: null })
+
+    const updatedVariables = variables.filter(v => v.name !== varName)
+    saveVariables(updatedVariables)
+  }
+
+  const cancelDelete = () => {
+    setDeleteConfirm({ isOpen: false, varName: null })
   }
 
   // Handle edit variable
@@ -183,13 +211,13 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
   const handleInsertVariable = (varName: string) => {
     const selectedElements = store.selectedElements
     if (selectedElements.length === 0) {
-      alert('Please select a text element first')
+      warning('Please select a text element first')
       return
     }
 
     const textElement = selectedElements.find((el: any) => el.type === 'text')
     if (!textElement) {
-      alert('Please select a text element to insert the variable')
+      warning('Please select a text element to insert the variable')
       return
     }
 
@@ -201,7 +229,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
   // Mark selected image as variable
   const handleMarkImageAsVariable = () => {
     if (!selectedImageElement) {
-      alert('Please select an image element first')
+      warning('Please select an image element first')
       return
     }
 
@@ -209,13 +237,13 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
     if (!varName) return
 
     if (!isValidVariableName(varName)) {
-      alert('Variable name must be alphanumeric with underscores only')
+      warning('Variable name must be alphanumeric with underscores only')
       return
     }
 
     // Check if variable already exists
     if (variables.some(v => v.name === varName)) {
-      alert('Variable name already exists')
+      warning('Variable name already exists')
       return
     }
 
@@ -234,26 +262,37 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
   }
 
   // Unmark image as variable
-  const handleUnmarkImageAsVariable = () => {
+  const handleUnmarkImageClick = () => {
     if (!selectedImageElement) return
 
     const varName = selectedImageElement.custom?.variable
     if (!varName) return
 
-    if (confirm(`Remove variable "${varName}" from this image?`)) {
-      // Remove custom.variable from the image element
-      const customCopy = { ...(selectedImageElement.custom || {}) }
-      delete customCopy.variable
-      selectedImageElement.set({ custom: customCopy })
+    setRemoveImageConfirm({ isOpen: true, varName })
+  }
 
-      // Optionally remove from registry if not used elsewhere
-      const designJson = store.toJSON()
-      const { imageVariables } = extractVariablesFromDesign(designJson)
-      if (!imageVariables.includes(varName)) {
-        const updatedVariables = variables.filter(v => v.name !== varName)
-        saveVariables(updatedVariables)
-      }
+  const confirmRemoveImage = () => {
+    if (!removeImageConfirm.varName || !selectedImageElement) return
+
+    const varName = removeImageConfirm.varName
+    setRemoveImageConfirm({ isOpen: false, varName: null })
+
+    // Remove custom.variable from the image element
+    const customCopy = { ...(selectedImageElement.custom || {}) }
+    delete customCopy.variable
+    selectedImageElement.set({ custom: customCopy })
+
+    // Optionally remove from registry if not used elsewhere
+    const designJson = store.toJSON()
+    const { imageVariables } = extractVariablesFromDesign(designJson)
+    if (!imageVariables.includes(varName)) {
+      const updatedVariables = variables.filter(v => v.name !== varName)
+      saveVariables(updatedVariables)
     }
+  }
+
+  const cancelRemoveImage = () => {
+    setRemoveImageConfirm({ isOpen: false, varName: null })
   }
 
   return (
@@ -319,7 +358,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
                 Marked as: <strong>{`{${selectedImageElement.custom.variable}}`}</strong>
               </div>
               <button
-                onClick={handleUnmarkImageAsVariable}
+                onClick={handleUnmarkImageClick}
                 style={{
                   width: '100%',
                   padding: '6px 12px',
@@ -616,7 +655,7 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
                       ✏️
                     </button>
                     <button
-                      onClick={() => handleDeleteVariable(variable.name)}
+                      onClick={() => handleDeleteClick(variable.name)}
                       style={{
                         padding: '4px 8px',
                         background: '#FFEBEE',
@@ -682,6 +721,30 @@ export const VariablesPanel = observer(({ store }: VariablesPanelProps) => {
           Select a text element and click &quot;Insert&quot; to add a variable.
         </p>
       </div>
+
+      {/* Confirmation Dialogs */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Variable"
+        message={`Are you sure you want to delete variable "${deleteConfirm.varName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
+
+      <ConfirmDialog
+        isOpen={removeImageConfirm.isOpen}
+        title="Remove Image Variable"
+        message={`Remove variable "${removeImageConfirm.varName}" from this image?`}
+        confirmText="Remove"
+        cancelText="Cancel"
+        onConfirm={confirmRemoveImage}
+        onCancel={cancelRemoveImage}
+      />
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   )
 })

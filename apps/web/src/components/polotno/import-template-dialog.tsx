@@ -140,8 +140,7 @@ export const ImportTemplateDialog: React.FC<ImportTemplateDialogProps> = ({
       success('Template imported successfully!')
     } catch (err: any) {
       console.error('Import failed:', err)
-      const errorMessage =
-        err.response?.data?.message || err.message || 'Failed to import PSD file'
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to import PSD file'
       error(`Import failed: ${errorMessage}`)
       setUploadStatus('Import failed')
     } finally {
