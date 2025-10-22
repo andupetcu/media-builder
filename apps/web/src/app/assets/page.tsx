@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation'
 import { ProtectedRoute } from '@/components/protected-route'
 import { useTeamStore } from '@/stores/team-store'
 import { apiClient } from '@/lib/api-client'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ToastContainer } from '@/components/ui/toast'
+import { useToast } from '@/hooks/use-toast'
 
 interface Asset {
   id: string
@@ -27,6 +30,12 @@ export default function AssetsPage() {
   const [editedName, setEditedName] = useState('')
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; assetId: string | null }>({
+    isOpen: false,
+    assetId: null,
+  })
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
+  const { toasts, removeToast, error: showError, warning } = useToast()
 
   useEffect(() => {
     initializeTeams()
@@ -80,7 +89,7 @@ export default function AssetsPage() {
       setEditingAssetId(null)
       setEditedName('')
     } catch (err: any) {
-      alert('Failed to update asset name: ' + (err.response?.data?.message || err.message))
+      showError('Failed to update asset name: ' + (err.response?.data?.message || err.message))
     }
   }
 
@@ -89,10 +98,15 @@ export default function AssetsPage() {
     setEditedName('')
   }
 
-  const handleDeleteAsset = async (assetId: string) => {
-    if (!currentTeamId) return
+  const handleDeleteClick = (assetId: string) => {
+    setDeleteConfirm({ isOpen: true, assetId })
+  }
 
-    if (!confirm('Are you sure you want to delete this asset?')) return
+  const confirmDeleteAsset = async () => {
+    if (!deleteConfirm.assetId || !currentTeamId) return
+
+    const assetId = deleteConfirm.assetId
+    setDeleteConfirm({ isOpen: false, assetId: null })
 
     try {
       await apiClient.delete(`/teams/${currentTeamId}/assets/${assetId}`)
@@ -103,8 +117,12 @@ export default function AssetsPage() {
         return newSet
       })
     } catch (err: any) {
-      alert('Failed to delete asset: ' + (err.response?.data?.message || err.message))
+      showError('Failed to delete asset: ' + (err.response?.data?.message || err.message))
     }
+  }
+
+  const cancelDelete = () => {
+    setDeleteConfirm({ isOpen: false, assetId: null })
   }
 
   const toggleSelectAsset = (assetId: string) => {
@@ -127,16 +145,14 @@ export default function AssetsPage() {
     }
   }
 
-  const handleBulkDelete = async () => {
+  const handleBulkDeleteClick = () => {
+    setBulkDeleteConfirm(true)
+  }
+
+  const confirmBulkDelete = async () => {
     if (!currentTeamId || selectedAssets.size === 0) return
 
-    if (
-      !confirm(
-        `Are you sure you want to delete ${selectedAssets.size} asset${selectedAssets.size > 1 ? 's' : ''}?`
-      )
-    )
-      return
-
+    setBulkDeleteConfirm(false)
     setIsDeleting(true)
 
     try {
@@ -149,15 +165,19 @@ export default function AssetsPage() {
       setSelectedAssets(new Set())
 
       if (data.failed.length > 0) {
-        alert(
+        warning(
           `Deleted ${data.totalDeleted} asset(s). Failed to delete ${data.totalFailed} asset(s).`
         )
       }
     } catch (err: any) {
-      alert('Failed to delete assets: ' + (err.response?.data?.message || err.message))
+      showError('Failed to delete assets: ' + (err.response?.data?.message || err.message))
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  const cancelBulkDelete = () => {
+    setBulkDeleteConfirm(false)
   }
 
   const formatFileSize = (bytes: number) => {
@@ -268,7 +288,7 @@ export default function AssetsPage() {
                 </button>
               </div>
               <button
-                onClick={handleBulkDelete}
+                onClick={handleBulkDeleteClick}
                 disabled={isDeleting}
                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed flex items-center space-x-2"
               >
@@ -476,7 +496,7 @@ export default function AssetsPage() {
                               </svg>
                             </button>
                             <button
-                              onClick={() => handleDeleteAsset(asset.id)}
+                              onClick={() => handleDeleteClick(asset.id)}
                               className="p-1 text-red-400 hover:text-red-600"
                               title="Delete"
                             >
@@ -515,6 +535,30 @@ export default function AssetsPage() {
             </>
           )}
         </main>
+
+        {/* Confirmation Dialogs */}
+        <ConfirmDialog
+          isOpen={deleteConfirm.isOpen}
+          title="Delete Asset"
+          message="Are you sure you want to delete this asset? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={confirmDeleteAsset}
+          onCancel={cancelDelete}
+        />
+
+        <ConfirmDialog
+          isOpen={bulkDeleteConfirm}
+          title="Delete Multiple Assets"
+          message={`Are you sure you want to delete ${selectedAssets.size} asset${selectedAssets.size > 1 ? 's' : ''}? This action cannot be undone.`}
+          confirmText="Delete All"
+          cancelText="Cancel"
+          onConfirm={confirmBulkDelete}
+          onCancel={cancelBulkDelete}
+        />
+
+        {/* Toast Notifications */}
+        <ToastContainer toasts={toasts} onRemove={removeToast} />
       </div>
     </ProtectedRoute>
   )
