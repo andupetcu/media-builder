@@ -4,6 +4,8 @@ import React, { useState, useRef } from 'react'
 import { Button, InputGroup, ProgressBar, Intent } from '@blueprintjs/core'
 import { apiClient } from '@/lib/api-client'
 import { useTeamStore } from '@/stores/team-store'
+import { ToastContainer } from '@/components/ui/toast'
+import { useToast } from '@/hooks/use-toast'
 
 interface ImportTemplateDialogProps {
   isOpen: boolean
@@ -27,10 +29,11 @@ export const ImportTemplateDialog: React.FC<ImportTemplateDialogProps> = ({
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const teamId = useTeamStore(state => state.currentTeamId)
+  const { toasts, removeToast, success, error, warning } = useToast()
 
   const handleFileSelect = (selectedFile: File) => {
     if (!selectedFile.name.toLowerCase().endsWith('.psd')) {
-      alert('Please select a PSD file')
+      warning('Please select a PSD file')
       return
     }
 
@@ -134,12 +137,12 @@ export const ImportTemplateDialog: React.FC<ImportTemplateDialogProps> = ({
 
       // Reset and close
       handleClose()
-      alert('Template imported successfully!')
-    } catch (error: any) {
-      console.error('Import failed:', error)
+      success('Template imported successfully!')
+    } catch (err: any) {
+      console.error('Import failed:', err)
       const errorMessage =
-        error.response?.data?.message || error.message || 'Failed to import PSD file'
-      alert(`Import failed: ${errorMessage}`)
+        err.response?.data?.message || err.message || 'Failed to import PSD file'
+      error(`Import failed: ${errorMessage}`)
       setUploadStatus('Import failed')
     } finally {
       setIsUploading(false)
@@ -355,6 +358,9 @@ export const ImportTemplateDialog: React.FC<ImportTemplateDialogProps> = ({
           </Button>
         </div>
       </div>
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   )
 }

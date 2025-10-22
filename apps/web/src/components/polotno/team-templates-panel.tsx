@@ -7,6 +7,9 @@ import { InputGroup, Button, Spinner } from '@blueprintjs/core'
 import { apiClient } from '@/lib/api-client'
 import { useTeamStore } from '@/stores/team-store'
 import { forEveryChild } from 'polotno/model/group-model'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ToastContainer } from '@/components/ui/toast'
+import { useToast } from '@/hooks/use-toast'
 
 // Icon for the templates section
 const MyTemplatesIcon = ({ size = 24 }) => (
@@ -27,7 +30,12 @@ const TeamTemplatesPanel = observer(({ store }: { store: any }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; templateId: string | null }>({
+    isOpen: false,
+    templateId: null,
+  })
   const teamId = useTeamStore(state => state.currentTeamId)
+  const { toasts, removeToast, error } = useToast()
 
   const loadTemplates = async () => {
     if (!teamId) return
@@ -52,24 +60,32 @@ const TeamTemplatesPanel = observer(({ store }: { store: any }) => {
     loadTemplates()
   }, [teamId, searchQuery])
 
-  const deleteTemplate = async (templateId: string, e: React.MouseEvent) => {
+  const handleDeleteClick = (templateId: string, e: React.MouseEvent) => {
     e.stopPropagation() // Prevent triggering the apply template action
+    setDeleteConfirm({ isOpen: true, templateId })
+  }
 
-    if (!confirm('Are you sure you want to delete this template?')) {
-      return
-    }
+  const confirmDelete = async () => {
+    if (!deleteConfirm.templateId) return
 
+    const templateId = deleteConfirm.templateId
+    setDeleteConfirm({ isOpen: false, templateId: null })
     setDeletingId(templateId)
+
     try {
       await apiClient.delete(`/teams/${teamId}/templates/${templateId}`)
       // Remove from local state
       setTemplates(prev => prev.filter(t => t.id !== templateId))
-    } catch (error) {
-      console.error('Failed to delete template:', error)
-      alert('Failed to delete template')
+    } catch (err) {
+      console.error('Failed to delete template:', err)
+      error('Failed to delete template')
     } finally {
       setDeletingId(null)
     }
+  }
+
+  const cancelDelete = () => {
+    setDeleteConfirm({ isOpen: false, templateId: null })
   }
 
   const applyTemplate = async (template: any) => {
@@ -92,7 +108,10 @@ const TeamTemplatesPanel = observer(({ store }: { store: any }) => {
         const currentStoreJSON = JSON.parse(JSON.stringify(store.toJSON()))
 
         // Ensure size compatibility
-        if (currentStoreJSON.width !== templateJson.width || currentStoreJSON.height !== templateJson.height) {
+        if (
+          currentStoreJSON.width !== templateJson.width ||
+          currentStoreJSON.height !== templateJson.height
+        ) {
           templateJson.pages.forEach((page: any) => {
             page.width = page.width || templateJson.width
             page.height = page.height || templateJson.height
@@ -114,9 +133,9 @@ const TeamTemplatesPanel = observer(({ store }: { store: any }) => {
 
         store.loadJSON(currentStoreJSON, true)
       }
-    } catch (error) {
-      console.error('Failed to apply template:', error)
-      alert('Failed to apply template')
+    } catch (err) {
+      console.error('Failed to apply template:', err)
+      error('Failed to apply template')
     }
   }
 
@@ -179,7 +198,7 @@ const TeamTemplatesPanel = observer(({ store }: { store: any }) => {
                     minimal
                     small
                     loading={deletingId === template.id}
-                    onClick={(e: React.MouseEvent) => deleteTemplate(template.id, e)}
+                    onClick={(e: React.MouseEvent) => handleDeleteClick(template.id, e)}
                     style={{
                       position: 'absolute',
                       top: '5px',
@@ -193,6 +212,20 @@ const TeamTemplatesPanel = observer(({ store }: { store: any }) => {
           </div>
         )}
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Template"
+        message="Are you sure you want to delete this template? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   )
 })

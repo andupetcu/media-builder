@@ -20,6 +20,8 @@ import { SaveTemplateDialog } from './polotno/save-template-dialog'
 import { ImportTemplateDialog } from './polotno/import-template-dialog'
 import { apiClient } from '@/lib/api-client'
 import { useTeamStore } from '@/stores/team-store'
+import { ToastContainer } from './ui/toast'
+import { useToast } from '@/hooks/use-toast'
 import '@blueprintjs/core/lib/css/blueprint.css'
 
 // Enable animations support
@@ -116,6 +118,7 @@ export const PolotnoEditor = observer(function PolotnoEditor({
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSaveTemplateDialogOpen, setIsSaveTemplateDialogOpen] = useState(false)
   const [isImportTemplateDialogOpen, setIsImportTemplateDialogOpen] = useState(false)
+  const { toasts, removeToast, success, error, warning } = useToast()
 
   useEffect(() => {
     // Load initial document if provided
@@ -211,7 +214,7 @@ export const PolotnoEditor = observer(function PolotnoEditor({
   const handleTemplateDialogSave = async (templateId?: string, name?: string) => {
     const teamId = useTeamStore.getState().currentTeamId
     if (!teamId) {
-      alert('No team selected')
+      warning('No team selected')
       return
     }
 
@@ -237,7 +240,7 @@ export const PolotnoEditor = observer(function PolotnoEditor({
           width: store.width,
           height: store.height,
         })
-        alert('Template updated successfully!')
+        success('Template updated successfully!')
       } else {
         // Create new template
         await apiClient.post(`/teams/${teamId}/templates`, {
@@ -247,13 +250,13 @@ export const PolotnoEditor = observer(function PolotnoEditor({
           width: store.width,
           height: store.height,
         })
-        alert('Template saved successfully!')
+        success('Template saved successfully!')
       }
 
       setIsSaveTemplateDialogOpen(false)
-    } catch (error) {
-      console.error('Save template failed:', error)
-      alert('Failed to save template')
+    } catch (err) {
+      console.error('Save template failed:', err)
+      error('Failed to save template')
     } finally {
       setIsSaving(false)
     }
@@ -264,7 +267,7 @@ export const PolotnoEditor = observer(function PolotnoEditor({
     // Load the imported template into the editor
     if (template.doc) {
       store.loadJSON(template.doc)
-      alert(`Template "${template.name}" loaded into editor!`)
+      success(`Template "${template.name}" loaded into editor!`)
     }
   }
 
@@ -281,9 +284,9 @@ export const PolotnoEditor = observer(function PolotnoEditor({
         pixelRatio: 2, // 2x quality for high-res
         mimeType: 'image/png',
       })
-    } catch (error) {
-      console.error('Export failed:', error)
-      alert('Failed to export design')
+    } catch (err) {
+      console.error('Export failed:', err)
+      error('Failed to export design')
     } finally {
       setIsExporting(false)
     }
@@ -300,9 +303,9 @@ export const PolotnoEditor = observer(function PolotnoEditor({
         pixelRatio: 2,
         mimeType: 'image/jpeg',
       })
-    } catch (error) {
-      console.error('Export failed:', error)
-      alert('Failed to export design')
+    } catch (err) {
+      console.error('Export failed:', err)
+      error('Failed to export design')
     } finally {
       setIsExporting(false)
     }
@@ -314,9 +317,9 @@ export const PolotnoEditor = observer(function PolotnoEditor({
     try {
       await store.waitLoading()
       await store.saveAsGIF()
-    } catch (error) {
-      console.error('GIF export failed:', error)
-      alert('Failed to export as GIF')
+    } catch (err) {
+      console.error('GIF export failed:', err)
+      error('Failed to export as GIF')
     } finally {
       setIsExporting(false)
     }
@@ -345,9 +348,9 @@ export const PolotnoEditor = observer(function PolotnoEditor({
       link.download = 'design-animation.mp4'
       link.click()
       URL.revokeObjectURL(url)
-    } catch (error) {
-      console.error('Video export failed:', error)
-      alert('Failed to export video. Make sure your design has animations enabled.')
+    } catch (err) {
+      console.error('Video export failed:', err)
+      error('Failed to export video. Make sure your design has animations enabled.')
     } finally {
       setIsExportingVideo(false)
       setVideoExportProgress(0)
@@ -742,6 +745,9 @@ export const PolotnoEditor = observer(function PolotnoEditor({
         onClose={() => setIsImportTemplateDialogOpen(false)}
         onImportComplete={handleImportComplete}
       />
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   )
 })

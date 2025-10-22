@@ -7,6 +7,9 @@ import { getImageSize } from 'polotno/utils/image'
 import MdPermMedia from '@meronex/icons/md/MdPermMedia'
 import { useTeamStore } from '@/stores/team-store'
 import { apiClient } from '@/lib/api-client'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ToastContainer } from '@/components/ui/toast'
+import { useToast } from '@/hooks/use-toast'
 
 interface Asset {
   id: string
@@ -25,6 +28,12 @@ export const TeamAssetsPanel = observer(({ store }: { store: any }) => {
   const [error, setError] = useState('')
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; assetId: string | null }>({
+    isOpen: false,
+    assetId: null,
+  })
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
+  const { toasts, removeToast, error: showError, warning } = useToast()
 
   useEffect(() => {
     if (currentTeamId) {
@@ -65,12 +74,16 @@ export const TeamAssetsPanel = observer(({ store }: { store: any }) => {
     })
   }
 
-  const handleDeleteAsset = async (assetId: string, event: React.MouseEvent) => {
+  const handleDeleteClick = (assetId: string, event: React.MouseEvent) => {
     event.stopPropagation()
+    setDeleteConfirm({ isOpen: true, assetId })
+  }
 
-    if (!currentTeamId) return
+  const confirmDeleteAsset = async () => {
+    if (!deleteConfirm.assetId || !currentTeamId) return
 
-    if (!confirm('Are you sure you want to delete this asset?')) return
+    const assetId = deleteConfirm.assetId
+    setDeleteConfirm({ isOpen: false, assetId: null })
 
     try {
       await apiClient.delete(`/teams/${currentTeamId}/assets/${assetId}`)
@@ -82,8 +95,12 @@ export const TeamAssetsPanel = observer(({ store }: { store: any }) => {
         return newSet
       })
     } catch (err: any) {
-      alert('Failed to delete asset: ' + (err.response?.data?.message || err.message))
+      showError('Failed to delete asset: ' + (err.response?.data?.message || err.message))
     }
+  }
+
+  const cancelDelete = () => {
+    setDeleteConfirm({ isOpen: false, assetId: null })
   }
 
   const toggleSelectAsset = (assetId: string, event: React.MouseEvent) => {
@@ -107,16 +124,14 @@ export const TeamAssetsPanel = observer(({ store }: { store: any }) => {
     }
   }
 
-  const handleBulkDelete = async () => {
+  const handleBulkDeleteClick = () => {
+    setBulkDeleteConfirm(true)
+  }
+
+  const confirmBulkDelete = async () => {
     if (!currentTeamId || selectedAssets.size === 0) return
 
-    if (
-      !confirm(
-        `Are you sure you want to delete ${selectedAssets.size} asset${selectedAssets.size > 1 ? 's' : ''}?`
-      )
-    )
-      return
-
+    setBulkDeleteConfirm(false)
     setIsDeleting(true)
 
     try {
@@ -129,15 +144,19 @@ export const TeamAssetsPanel = observer(({ store }: { store: any }) => {
       setSelectedAssets(new Set())
 
       if (data.failed.length > 0) {
-        alert(
+        warning(
           `Deleted ${data.totalDeleted} asset(s). Failed to delete ${data.totalFailed} asset(s).`
         )
       }
     } catch (err: any) {
-      alert('Failed to delete assets: ' + (err.response?.data?.message || err.message))
+      showError('Failed to delete assets: ' + (err.response?.data?.message || err.message))
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  const cancelBulkDelete = () => {
+    setBulkDeleteConfirm(false)
   }
 
   if (error) {
@@ -201,7 +220,7 @@ export const TeamAssetsPanel = observer(({ store }: { store: any }) => {
               ({selectedAssets.size} selected)
             </span>
             <button
-              onClick={handleBulkDelete}
+              onClick={handleBulkDeleteClick}
               disabled={isDeleting}
               style={{
                 marginLeft: 'auto',
@@ -262,7 +281,7 @@ export const TeamAssetsPanel = observer(({ store }: { store: any }) => {
               }}
             />
             <button
-              onClick={e => handleDeleteAsset(asset.id, e)}
+              onClick={e => handleDeleteClick(asset.id, e)}
               style={{
                 position: 'absolute',
                 top: '4px',
@@ -300,6 +319,30 @@ export const TeamAssetsPanel = observer(({ store }: { store: any }) => {
           </div>
         ))}
       </div>
+
+      {/* Confirmation Dialogs */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Asset"
+        message="Are you sure you want to delete this asset? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteAsset}
+        onCancel={cancelDelete}
+      />
+
+      <ConfirmDialog
+        isOpen={bulkDeleteConfirm}
+        title="Delete Multiple Assets"
+        message={`Are you sure you want to delete ${selectedAssets.size} asset${selectedAssets.size > 1 ? 's' : ''}? This action cannot be undone.`}
+        confirmText="Delete All"
+        cancelText="Cancel"
+        onConfirm={confirmBulkDelete}
+        onCancel={cancelBulkDelete}
+      />
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   )
 })
