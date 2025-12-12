@@ -3,17 +3,20 @@
 ## Issues Fixed
 
 ### Issue #1: Layer Positioning
+
 **Problem**: All layers were imported at position (0, 0) instead of their actual PSD coordinates.
 
 **Root Cause**: The PSD converter was not extracting the layer offset information from ImageMagick's geometry data.
 
 **Solution**:
+
 - Added geometry parsing to extract X and Y offsets from ImageMagick's output
 - Parse geometry format: `WIDTHxHEIGHT+X+Y` or `WIDTHxHEIGHT-X+Y`
 - Example: `4209x4405-708+333` = width: 4209, height: 4405, x: -708, y: 333
 - Supports both positive and negative offsets
 
 **Changes Made**:
+
 ```typescript
 // Before: Hardcoded positions
 x: 0,
@@ -29,16 +32,19 @@ const offsetY = parseInt(geometryMatch[4])
 ```
 
 ### Issue #2: Layer Order
+
 **Problem**: Layers were being imported in reverse order compared to the PSD file.
 
 **Root Cause**: Incorrect assumption about layer stacking order between ImageMagick and Polotno.
 
 **Solution**:
+
 - **ImageMagick**: Extracts layers from index 0 (bottom/background) to N (top)
 - **Polotno**: children[0] is rendered first (bottom), children[last] is rendered last (top)
 - **Fix**: Keep natural ImageMagick order without reversing
 
 **Changes Made**:
+
 ```typescript
 // Before: Reversed the array
 return layers.reverse()
@@ -51,22 +57,22 @@ return layers
 
 For reference, here's the layer data from `KV_Impulse__ShareACoke L.psd`:
 
-| Layer | Dimensions | Position | Notes |
-|-------|------------|----------|-------|
-| 0 | 7016x4961 | (0, 0) | Full canvas - composite |
-| 1 | 7016x4961 | (0, 0) | Full canvas - background |
-| 2 | 4209x4405 | (-708, 333) | Content layer |
-| 3 | 6086x4313 | (-1369, 412) | Content layer |
-| 4 | 692x693 | (366, 312) | Small element |
-| 5 | 692x692 | (1770, 3971) | Small element |
-| 6 | 3880x51 | (96, 4826) | Text/line element |
-| 7 | 4963x2139 | (1923, 189) | Large element |
-| 8 | 2088x761 | (4378, 3787) | Medium element |
-| 9 | 492x287 | (5831, 4020) | Small element |
-| 10 | 610x610 | (5150, 3866) | Small element |
-| 11 | 2110x300 | (4301, 2447) | Text element |
-| 12 | 2085x133 | (4310, 3406) | Text element |
-| 13 | 2115x591 | (4295, 2765) | Medium element |
+| Layer | Dimensions | Position     | Notes                    |
+| ----- | ---------- | ------------ | ------------------------ |
+| 0     | 7016x4961  | (0, 0)       | Full canvas - composite  |
+| 1     | 7016x4961  | (0, 0)       | Full canvas - background |
+| 2     | 4209x4405  | (-708, 333)  | Content layer            |
+| 3     | 6086x4313  | (-1369, 412) | Content layer            |
+| 4     | 692x693    | (366, 312)   | Small element            |
+| 5     | 692x692    | (1770, 3971) | Small element            |
+| 6     | 3880x51    | (96, 4826)   | Text/line element        |
+| 7     | 4963x2139  | (1923, 189)  | Large element            |
+| 8     | 2088x761   | (4378, 3787) | Medium element           |
+| 9     | 492x287    | (5831, 4020) | Small element            |
+| 10    | 610x610    | (5150, 3866) | Small element            |
+| 11    | 2110x300   | (4301, 2447) | Text element             |
+| 12    | 2085x133   | (4310, 3406) | Text element             |
+| 13    | 2115x591   | (4295, 2765) | Medium element           |
 
 ## Testing the Fixes
 
@@ -90,6 +96,7 @@ For reference, here's the layer data from `KV_Impulse__ShareACoke L.psd`:
 ### How to Test:
 
 1. **Import the test PSD**:
+
    ```bash
    # In the UI, click "Import Template"
    # Select: KV_Impulse__ShareACoke L.psd
@@ -122,6 +129,7 @@ The updated service now logs layer extraction details:
 ```
 
 Check API logs to verify positions are being extracted correctly:
+
 ```bash
 pm2 logs media-builder-api --lines 50
 ```
@@ -133,6 +141,7 @@ pm2 logs media-builder-api --lines 50
 **Lines Changed**: 197-255
 
 **Key Changes**:
+
 1. Added ImageMagick geometry extraction (line 199-201)
 2. Added geometry parsing with regex (line 205)
 3. Extract offsetX and offsetY from geometry (line 214-215)

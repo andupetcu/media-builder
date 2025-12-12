@@ -38,16 +38,19 @@ All temporary files are automatically cleaned up after import:
 The optimization system intelligently resizes images based on their orientation:
 
 #### Landscape Images (width ≥ height)
+
 - **Max width**: 1920px (Full HD landscape)
 - **Use case**: Most canvas designs, presentations, social media banners
 - **Example**: 7016×4961px → 1920×1357px
 
 #### Portrait Images (height > width)
+
 - **Max width**: 1080px (Full HD portrait)
 - **Use case**: Mobile-first designs, Instagram stories, vertical video
 - **Example**: 1080×1920px → 1080×1920px (no change needed)
 
 #### Key Features
+
 - **Aspect ratio preserved**: Images are never stretched or distorted
 - **No upscaling**: Small images are not enlarged
 - **Fit inside dimensions**: Uses Sharp's `fit: 'inside'` mode
@@ -55,6 +58,7 @@ The optimization system intelligently resizes images based on their orientation:
 ### Compression
 
 All images are optimized with:
+
 - **Compression level**: 9 (maximum PNG compression)
 - **Quality**: 90 (high quality preservation)
 - **Alpha channel**: Preserved for transparency
@@ -64,11 +68,13 @@ Even images that don't need resizing still get compression optimization.
 ### Performance Impact
 
 #### Before Optimization
+
 - Layer 0: 21MB
 - Layer 3: 36MB
 - **Total**: ~59MB for 14 layers
 
 #### After Optimization (estimated)
+
 - Layer 0: ~2-3MB (85-90% reduction)
 - Layer 3: ~4-5MB (85-90% reduction)
 - **Total**: ~8-10MB for 14 layers
@@ -120,11 +126,12 @@ To verify optimization is working:
 To adjust optimization settings, modify these constants in [psd-converter.service.ts](apps/api/src/templates/psd-converter.service.ts#L276-L277):
 
 ```typescript
-const MAX_LANDSCAPE_WIDTH = 1920  // Full HD landscape
-const MAX_PORTRAIT_WIDTH = 1080   // Full HD portrait
+const MAX_LANDSCAPE_WIDTH = 1920 // Full HD landscape
+const MAX_PORTRAIT_WIDTH = 1080 // Full HD portrait
 ```
 
 For different use cases:
+
 - **4K Support**: Increase to 3840×2160
 - **Web-only**: Reduce to 1280×720
 - **Print**: Consider disabling resize (set very high values)
@@ -140,6 +147,7 @@ For different use cases:
 ## Future Enhancements
 
 Potential improvements:
+
 - [ ] Configurable optimization levels (low/medium/high)
 - [ ] Format conversion (PNG → WebP for better compression)
 - [ ] Progressive resize (multiple sizes for responsive images)

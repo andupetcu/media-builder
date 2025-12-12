@@ -1,35 +1,35 @@
-import { IsString, IsOptional, IsInt, IsBoolean, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsBoolean, IsArray } from 'class-validator'
 
 export class UpdateTemplateDto {
   @IsString()
   @IsOptional()
-  name?: string;
+  name?: string
 
   @IsString()
   @IsOptional()
-  description?: string;
+  description?: string
 
   @IsOptional()
-  doc?: any; // Polotno JSON
+  doc?: any // Polotno JSON
 
   @IsString()
   @IsOptional()
-  thumbnail?: string;
+  thumbnail?: string
 
   @IsInt()
   @IsOptional()
-  width?: number;
+  width?: number
 
   @IsInt()
   @IsOptional()
-  height?: number;
+  height?: number
 
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
-  tags?: string[];
+  tags?: string[]
 
   @IsBoolean()
   @IsOptional()
-  isPublic?: boolean;
+  isPublic?: boolean
 }

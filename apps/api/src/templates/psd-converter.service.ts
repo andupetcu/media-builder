@@ -298,9 +298,7 @@ export class PsdConverterService {
     }
 
     if (needsResize) {
-      this.logger.log(
-        `Optimizing layer from ${width}x${height} to max width ${targetWidth}px`
-      )
+      this.logger.log(`Optimizing layer from ${width}x${height} to max width ${targetWidth}px`)
 
       const optimized = await sharp(imagePath)
         .resize(targetWidth, targetHeight, {

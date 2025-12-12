@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateTemplateDto } from './dto/create-template.dto';
-import { UpdateTemplateDto } from './dto/update-template.dto';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common'
+import { PrismaService } from '../prisma/prisma.service'
+import { CreateTemplateDto } from './dto/create-template.dto'
+import { UpdateTemplateDto } from './dto/update-template.dto'
 
 @Injectable()
 export class TemplatesService {
@@ -30,19 +30,13 @@ export class TemplatesService {
           },
         },
       },
-    });
+    })
   }
 
-  async findAll(
-    teamId: string,
-    query?: string,
-    page = 1,
-    perPage = 30,
-    sizeQuery?: string,
-  ) {
+  async findAll(teamId: string, query?: string, page = 1, perPage = 30, sizeQuery?: string) {
     const where: any = {
       teamId,
-    };
+    }
 
     // Search by query
     if (query) {
@@ -50,20 +44,20 @@ export class TemplatesService {
         { name: { contains: query, mode: 'insensitive' } },
         { description: { contains: query, mode: 'insensitive' } },
         { tags: { has: query } },
-      ];
+      ]
     }
 
     // Filter by size if sizeQuery provided (e.g., "width=1920&height=1080")
     if (sizeQuery) {
-      const sizeParams = new URLSearchParams(sizeQuery);
-      const width = sizeParams.get('width');
-      const height = sizeParams.get('height');
+      const sizeParams = new URLSearchParams(sizeQuery)
+      const width = sizeParams.get('width')
+      const height = sizeParams.get('height')
 
-      if (width) where.width = parseInt(width);
-      if (height) where.height = parseInt(height);
+      if (width) where.width = parseInt(width)
+      if (height) where.height = parseInt(height)
     }
 
-    const skip = (page - 1) * perPage;
+    const skip = (page - 1) * perPage
 
     const [templates, total] = await Promise.all([
       this.prisma.template.findMany({
@@ -82,7 +76,7 @@ export class TemplatesService {
         },
       }),
       this.prisma.template.count({ where }),
-    ]);
+    ])
 
     return {
       items: templates,
@@ -90,7 +84,7 @@ export class TemplatesService {
       page,
       perPage,
       totalPages: Math.ceil(total / perPage),
-    };
+    }
   }
 
   async findOne(id: string, teamId: string) {
@@ -105,22 +99,22 @@ export class TemplatesService {
           },
         },
       },
-    });
+    })
 
     if (!template) {
-      throw new NotFoundException(`Template with ID ${id} not found`);
+      throw new NotFoundException(`Template with ID ${id} not found`)
     }
 
     if (template.teamId !== teamId) {
-      throw new ForbiddenException('You do not have access to this template');
+      throw new ForbiddenException('You do not have access to this template')
     }
 
-    return template;
+    return template
   }
 
   async update(id: string, teamId: string, updateTemplateDto: UpdateTemplateDto) {
     // Check if template exists and belongs to team
-    await this.findOne(id, teamId);
+    await this.findOne(id, teamId)
 
     return this.prisma.template.update({
       where: { id },
@@ -134,15 +128,15 @@ export class TemplatesService {
           },
         },
       },
-    });
+    })
   }
 
   async remove(id: string, teamId: string) {
     // Check if template exists and belongs to team
-    await this.findOne(id, teamId);
+    await this.findOne(id, teamId)
 
     return this.prisma.template.delete({
       where: { id },
-    });
+    })
   }
 }
